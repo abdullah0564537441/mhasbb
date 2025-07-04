@@ -31,7 +31,8 @@ class _ItemSelectionScreenState extends State<ItemSelectionScreen> {
 
     // تهيئة الكميات المختارة بناءً على الأصناف الموجودة في الفاتورة
     for (var invoiceItem in widget.existingInvoiceItems) {
-      _selectedQuantities[invoiceItem.itemId] = invoiceItem.quantity;
+      // ⭐ التعديل هنا: التأكد من أن الكمية هي double
+      _selectedQuantities[invoiceItem.itemId] = invoiceItem.quantity.toDouble(); 
     }
   }
 
