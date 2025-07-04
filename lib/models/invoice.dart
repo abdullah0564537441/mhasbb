@@ -1,31 +1,34 @@
 import 'package:hive/hive.dart';
-import 'package:mhasbb/models/invoice_item.dart'; // تأكد من المسار الصحيح واسم المشروع (mhasbb)
-import 'package:mhasbb/models/customer.dart'; // تأكد من المسار الصحيح واسم المشروع (mhasbb)
+import 'package:mhasbb/models/invoice_item.dart'; // تأكد من استيراد InvoiceItem
 
-part 'invoice.g.dart'; // هذا الملف سيتم توليده بواسطة build_runner
+part 'invoice.g.dart';
 
-@HiveType(typeId: 3) // رقم TypeId فريد لهذا الكلاس (تأكد من عدم تكراره)
+@HiveType(typeId: 3) // ⭐ تأكد أن الـ typeId هذا فريد (مثلاً 3 للفواتير)
 class Invoice extends HiveObject {
   @HiveField(0)
-  late String id; // معرف فريد للفاتورة (عادةً ما يتم إنشاؤه تلقائيًا)
-  
+  final String id; // معرف فريد للفاتورة
+
   @HiveField(1)
-  late DateTime invoiceDate; // تاريخ الفاتورة
-
+  String invoiceNumber; // ⭐ أضف رقم الفاتورة
+  
   @HiveField(2)
-  late Customer customer; // العميل المرتبط بهذه الفاتورة
-
+  String customerName; // ⭐ أضف اسم العميل
+  
   @HiveField(3)
-  late List<InvoiceItem> items; // قائمة الأصناف في الفاتورة
-
-  // حساب إجمالي الفاتورة من مجموع totals لكل عنصر
-  double get totalAmount => items.fold(0.0, (sum, item) => sum + item.total);
+  DateTime invoiceDate; // تاريخ الفاتورة
+  
+  @HiveField(4)
+  List<InvoiceItem> items; // قائمة الأصناف في هذه الفاتورة
+  
+  @HiveField(5)
+  double totalAmount; // إجمالي مبلغ الفاتورة
 
   Invoice({
     required this.id,
+    required this.invoiceNumber, // ⭐ أضفها إلى المنشئ
+    required this.customerName,  // ⭐ أضفها إلى المنشئ
     required this.invoiceDate,
-    required this.customer,
     required this.items,
+    required this.totalAmount,
   });
 }
-
