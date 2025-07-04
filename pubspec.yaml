@@ -37,8 +37,7 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   path_provider: ^2.1.5
-  # ⭐ هذا هو السطر الذي تمت إضافته:
-  shared_preferences: ^2.2.0 # هذا هو الإصدار الأخير الثابت، يمكنك تحديثه لاحقًا إذا لزم الأمر
+  shared_preferences: ^2.2.0
 
 dev_dependencies:
   flutter_test:
@@ -50,6 +49,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  
+  # ⭐ تمت إضافة هذين السطرين لتوليد كود Hive
+  hive_generator: ^2.4.0 # تأكد من استخدام أحدث إصدار متوافق
+  build_runner: ^2.4.9 # تأكد من استخدام أحدث إصدار متوافق
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
