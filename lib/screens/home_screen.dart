@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // لاستخدام SharedPreferences
 
-// استيراد الشاشات التي سيتم التنقل إليها
+// استيراد الشاشات المكتملة التي سيتم التنقل إليها
 import 'package:mhasbb/screens/login_screen.dart';
 import 'package:mhasbb/screens/sales_invoices_screen.dart';
-import 'package:mhasbb/screens/inventory_screen.dart'; // شاشة المخزون (هي ItemsScreen في الواقع)
-import 'package:mhasbb/screens/purchase_invoices_screen.dart'; // ⭐ استيراد شاشة فواتير الشراء
-import 'package:mhasbb/screens/suppliers_screen.dart'; // ⭐ استيراد شاشة الموردين
+import 'package:mhasbb/screens/inventory_screen.dart'; // شاشة المخزون
+import 'package:mhasbb/screens/purchase_invoices_screen.dart'; // شاشة فواتير الشراء
 import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen (للأقسام غير المكتملة)
 
 
@@ -28,18 +27,19 @@ class HomeScreen extends StatelessWidget {
   void _navigateToSection(BuildContext context, String sectionName) {
     switch (sectionName) {
       case 'فواتير البيع':
+        // هذا القسم مكتمل
         Navigator.push(context, MaterialPageRoute(builder: (context) => const SalesInvoicesScreen()));
         break;
-      case 'المخزون':
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const InventoryScreen()));
-        break;
-      case 'فواتير الشراء': // ⭐ تحديث: الانتقال إلى شاشة فواتير الشراء الفعلية
+      case 'فواتير الشراء':
+        // هذا القسم مكتمل
         Navigator.push(context, MaterialPageRoute(builder: (context) => const PurchaseInvoicesScreen()));
         break;
-      case 'الموردين': // ⭐ تحديث: الانتقال إلى شاشة الموردين الفعلية
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const SuppliersScreen()));
+      case 'المخزون':
+        // هذا القسم مكتمل
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const InventoryScreen()));
         break;
       case 'العملاء':
+      case 'الموردين':
       case 'كشف الحساب':
       case 'التقارير':
       case 'الضريبة':
