@@ -1,29 +1,29 @@
 import 'package:hive/hive.dart';
 
-part 'invoice_item.g.dart'; // هذا الملف سيتم توليده بواسطة build_runner
+part 'invoice_item.g.dart';
 
-@HiveType(typeId: 2) // رقم TypeId فريد لهذا الكلاس (تأكد من عدم تكراره)
+@HiveType(typeId: 2) // ⭐ تأكد أن الـ typeId هذا فريد (مثلاً 2 لأصناف الفاتورة)
 class InvoiceItem extends HiveObject {
   @HiveField(0)
-  late String itemId; // معرف الصنف (المنتج)
-  
+  final String itemId; // ID الصنف من المخزون
+
   @HiveField(1)
-  late String itemName; // اسم الصنف (للسهولة في العرض)
-
+  String itemName; // اسم الصنف وقت البيع
+  
   @HiveField(2)
-  late double sellingPrice; // السعر الذي تم بيع الصنف به في هذه الفاتورة
-
+  double quantity; // ⭐ تأكد أنه من نوع double (يمكن أن يكون 1.0، 2.5، إلخ)
+  
   @HiveField(3)
-  late int quantity; // الكمية المباعة من هذا الصنف
+  String unit; // ⭐ أضف الوحدة
 
-  // يمكن إضافة Total لهذا العنصر الواحد (السعر * الكمية)
-  double get total => sellingPrice * quantity;
+  @HiveField(4)
+  double sellingPrice; // سعر البيع الفعلي وقت البيع
 
   InvoiceItem({
     required this.itemId,
     required this.itemName,
-    required this.sellingPrice,
     required this.quantity,
+    required this.unit, // ⭐ أضفها إلى المنشئ
+    required this.sellingPrice,
   });
 }
-
