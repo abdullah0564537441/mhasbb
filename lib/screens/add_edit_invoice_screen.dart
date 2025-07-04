@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 // استيراد موديلات Hive
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/invoice_item.dart';
-import 'package:mhasbb/models/customer.dart'; 
+import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/item.dart'; // ⭐ تأكد من استيراد موديل Item
 
 // استيراد شاشة اختيار الأصناف الجديدة
@@ -76,7 +76,8 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
 
   // دالة لتنسيق التاريخ
   String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')숙';
+    // ⭐ هذا هو السطر الذي تم إصلاحه: تم حذف الحرف الزائد '숙'
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   // دالة لحساب الإجمالي الكلي للفاتورة
