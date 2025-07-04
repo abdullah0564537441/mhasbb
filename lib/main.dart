@@ -5,8 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 // استيراد الشاشات الرئيسية
 import 'package:mhasbb/screens/home_screen.dart';
 import 'package:mhasbb/screens/login_screen.dart';
-// ⭐ استيراد شاشة فواتير البيع الجديدة (ستقوم بإنشائها لاحقًا)
 import 'package:mhasbb/screens/sales_invoices_screen.dart'; 
+// ⭐ استيراد شاشة إضافة/تعديل الفاتورة الجديدة
+import 'package:mhasbb/screens/add_edit_invoice_screen.dart';
 
 // ⭐ استيراد موديلات Hive التي قمت بإنشائها
 import 'package:mhasbb/models/item.dart';
@@ -174,8 +175,9 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
-        // ⭐ إضافة مسار شاشة فواتير البيع (مهم جداً!)
         '/sales_invoices': (context) => const SalesInvoicesScreen(), 
+        // ⭐ إضافة مسار شاشة إضافة/تعديل الفاتورة هنا (مهم لتسهيل التنقل)
+        '/add_edit_invoice': (context) => const AddEditInvoiceScreen(), 
         // يمكنك لاحقًا إضافة مسارات لبقية الأقسام هنا:
         '/purchase_invoices': (context) => const PlaceholderScreen(title: 'فواتير الشراء'),
         '/inventory': (context) => const PlaceholderScreen(title: 'المخزون'),
