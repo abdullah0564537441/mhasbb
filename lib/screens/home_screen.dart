@@ -35,10 +35,8 @@ class HomeScreen extends StatelessWidget {
             final section = sections[index];
             return GestureDetector(
               onTap: () {
-                // هنا نستبدل بـ Navigator.pushNamed
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('انتقلت إلى ${section['title']}')),
-                );
+                // التنقل الحقيقي إلى الشاشة المطلوبة
+                Navigator.pushNamed(context, section['route'] as String);
               },
               child: Container(
                 decoration: BoxDecoration(
