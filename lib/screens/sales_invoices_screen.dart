@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart'; // سنستخدمه هنا لعرض البيانات
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart'; // لاستخدام DateFormat لتنسيق التاريخ
 
-// ⭐ استيراد الموديلات اللازمة
-import 'package:mhasbb/models/invoice.dart'; // استيراد موديل الفاتورة
-import 'package:mhasbb/models/customer.dart'; // استيراد موديل العميل (لفاتورة البيع)
-
-// ⭐ استيراد شاشة إضافة/تعديل الفاتورة
+// استيراد موديل الفاتورة (Invoice)
+import 'package:mhasbb/models/invoice.dart';
+// استيراد شاشة إضافة/تعديل الفاتورة
 import 'package:mhasbb/screens/add_edit_invoice_screen.dart';
 
-// شاشة عرض فواتير البيع الرئيسية
 class SalesInvoicesScreen extends StatefulWidget {
   const SalesInvoicesScreen({super.key});
 
@@ -22,7 +20,7 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
   @override
   void initState() {
     super.initState();
-    // الحصول على مثيل صندوق الفواتير عند تهيئة الشاشة
+    // فتح صندوق الفواتير عند تهيئة الشاشة
     invoicesBox = Hive.box<Invoice>('invoices_box');
   }
 
@@ -33,7 +31,7 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('تأكيد الحذف'),
-          content: const Text('هل أنت متأكد أنك تريد حذف هذه الفاتورة؟'),
+          content: Text('هل أنت متأكد أنك تريد حذف الفاتورة رقم "${invoice.invoiceNumber}"؟'),
           actions: <Widget>[
             TextButton(
               child: const Text('لا', style: TextStyle(color: Colors.indigo)),
@@ -76,7 +74,6 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
         centerTitle: true,
       ),
       // استخدام ValueListenableBuilder لمراقبة التغييرات في صندوق Hive
-      // هذا سيضمن تحديث الواجهة تلقائيًا عند إضافة/حذف/تعديل الفواتير
       body: ValueListenableBuilder<Box<Invoice>>(
         valueListenable: invoicesBox.listenable(),
         builder: (context, box, _) {
@@ -108,39 +105,38 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  leading: const Icon(Icons.receipt, size: 40, color: Colors.indigo),
+                  leading: const Icon(Icons.receipt_long, size: 40, color: Colors.blueGrey),
                   title: Text(
-                    'فاتورة رقم: ${invoice.id}', // استخدم invoice.id مباشرة
+                    'فاتورة رقم: ${invoice.invoiceNumber}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
-                      Text('العميل: ${invoice.customer.name}', style: TextStyle(color: Colors.grey[700])),
-                      Text('التاريخ: ${invoice.invoiceDate.toLocal().toString().split(' ')[0]}', style: TextStyle(color: Colors.grey[700])),
-                      Text('الإجمالي: ${invoice.totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      // ⭐ التعديل هنا: استخدم customerName مباشرة
+                      Text('العميل: ${invoice.customerName}', style: TextStyle(color: Colors.grey[700])),
+                      Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(invoice.invoiceDate)}', style: TextStyle(color: Colors.grey[700])),
+                      Text('الإجمالي: ${invoice.totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.teal)),
                     ],
                   ),
-                  // إضافة زر الحذف هنا
                   trailing: Row(
-                    mainAxisSize: MainAxisSize.min, // لجعل Row تأخذ أقل مساحة ممكنة
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blueGrey), // زر تعديل
+                        icon: const Icon(Icons.edit, color: Colors.blueGrey),
                         onPressed: () {
-                          // ⭐ الانتقال إلى شاشة تفاصيل/تعديل الفاتورة وتمرير الفاتورة
+                          // الانتقال إلى شاشة تعديل الفاتورة وتمرير الفاتورة
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AddEditInvoiceScreen(invoice: invoice),
+                              builder: (context) => AddEditInvoiceScreen(invoice: invoice), // تمرير الفاتورة للتعديل
                             ),
                           );
-                          print('View/Edit invoice: ${invoice.id}');
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red), // زر الحذف
+                        icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
                           _confirmAndDeleteInvoice(context, invoice); // استدعاء دالة التأكيد والحذف
                         },
@@ -148,12 +144,8 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
                     ],
                   ),
                   onTap: () {
-                    // يمكنك إزالة هذا الـ onTap إذا كنت تفضل أن يكون التفاعل عبر الأزرار فقط
-                    // أو يمكنك تركه للانتقال إلى شاشة التفاصيل
-                    print('Tapped on invoice: ${invoice.id}');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('تم النقر على الفاتورة (يمكنك تعديل هذا السلوك)')),
-                    );
+                    // يمكنك فتح شاشة تفاصيل الفاتورة هنا
+                    print('Tapped on invoice: ${invoice.invoiceNumber}');
                   },
                 ),
               );
@@ -163,14 +155,13 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // ⭐ الانتقال إلى شاشة إضافة فاتورة جديدة فارغة
+          // الانتقال إلى شاشة إضافة فاتورة جديدة
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddEditInvoiceScreen(), // للانتقال إلى شاشة إضافة فاتورة جديدة
+              builder: (context) => const AddEditInvoiceScreen(),
             ),
           );
-          print('Add New Invoice button pressed');
         },
         child: const Icon(Icons.add),
       ),
