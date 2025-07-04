@@ -3,8 +3,8 @@ import 'package:hive_flutter/hive_flutter.dart'; // ستبقى موجودة لل
 import 'package:shared_preferences/shared_preferences.dart'; // لإدارة التفضيلات البسيطة (مستخدمة في LoginScreen)
 
 // استيراد الشاشات الرئيسية فقط
-import 'package:mhasb/screens/home_screen.dart';
-import 'package:mhasb/screens/login_screen.dart';
+import 'package:mhasbb/screens/home_screen.dart';
+import 'package:mhasbb/screens/login_screen.dart';
 
 // ---
 // تعريف متغير SharedPreferences العام فقط، لأنه هو المطلوب حاليًا للوحة الدخول
