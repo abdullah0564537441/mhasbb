@@ -3,6 +3,9 @@ import 'package:hive_flutter/hive_flutter.dart'; // لاستخدام ValueListen
 
 // استيراد موديل الصنف (Item)
 import 'package:mhasbb/models/item.dart';
+// ⭐ استيراد شاشة إضافة/تعديل الأصناف الجديدة
+import 'package:mhasbb/screens/add_edit_item_screen.dart';
+
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -123,11 +126,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blueGrey),
                         onPressed: () {
-                          // ⭐ هنا سننتقل إلى شاشة تفاصيل/تعديل الصنف (سننشئها لاحقاً)
-                          print('View/Edit item: ${item.name}');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('سيتم فتح شاشة تعديل الصنف هنا')),
+                          // ⭐ الانتقال إلى شاشة تفاصيل/تعديل الصنف وتمرير الصنف
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddEditItemScreen(item: item), // تمرير الصنف للتعديل
+                            ),
                           );
+                          print('View/Edit item: ${item.name}');
                         },
                       ),
                       IconButton(
@@ -152,11 +158,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // ⭐ هنا سننتقل إلى شاشة إضافة صنف جديد (سننشئها لاحقاً)
-          print('Add New Item button pressed');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('سيتم فتح شاشة إضافة صنف جديد هنا')),
+          // ⭐ الانتقال إلى شاشة إضافة صنف جديد فارغة
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddEditItemScreen(), // للانتقال إلى شاشة إضافة صنف جديد
+            ),
           );
+          print('Add New Item button pressed');
         },
         child: const Icon(Icons.add),
       ),
