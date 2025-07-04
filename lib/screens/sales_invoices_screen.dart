@@ -5,6 +5,9 @@ import 'package:hive_flutter/hive_flutter.dart'; // سنستخدمه هنا لع
 import 'package:mhasbb/models/invoice.dart'; // استيراد موديل الفاتورة
 import 'package:mhasbb/models/customer.dart'; // استيراد موديل العميل (لفاتورة البيع)
 
+// ⭐ استيراد شاشة إضافة/تعديل الفاتورة
+import 'package:mhasbb/screens/add_edit_invoice_screen.dart';
+
 // شاشة عرض فواتير البيع الرئيسية
 class SalesInvoicesScreen extends StatefulWidget {
   const SalesInvoicesScreen({super.key});
@@ -23,7 +26,7 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
     invoicesBox = Hive.box<Invoice>('invoices_box');
   }
 
-  // ⭐ دالة لعرض نافذة التأكيد وحذف الفاتورة
+  // دالة لعرض نافذة التأكيد وحذف الفاتورة
   void _confirmAndDeleteInvoice(BuildContext context, Invoice invoice) {
     showDialog(
       context: context,
@@ -46,8 +49,6 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
               child: const Text('نعم، احذف', style: TextStyle(color: Colors.white)),
               onPressed: () {
                 // حذف الفاتورة من Hive باستخدام مفتاحها (key)
-                // تأكد أن موديل Invoice لديه خاصية .key أو استخدم invoice.id إذا كان هو المفتاح
-                // عادةً ما يكون مفتاح Hive هو key الذي يتم تخزين العنصر به
                 if (invoice.key != null) {
                   invoicesBox.delete(invoice.key);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -74,7 +75,7 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
         title: const Text('فواتير البيع'),
         centerTitle: true,
       ),
-      // ⭐ استخدام ValueListenableBuilder لمراقبة التغييرات في صندوق Hive
+      // استخدام ValueListenableBuilder لمراقبة التغييرات في صندوق Hive
       // هذا سيضمن تحديث الواجهة تلقائيًا عند إضافة/حذف/تعديل الفواتير
       body: ValueListenableBuilder<Box<Invoice>>(
         valueListenable: invoicesBox.listenable(),
@@ -121,18 +122,21 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
                       Text('الإجمالي: ${invoice.totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     ],
                   ),
-                  // ⭐ إضافة زر الحذف هنا
+                  // إضافة زر الحذف هنا
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min, // لجعل Row تأخذ أقل مساحة ممكنة
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blueGrey), // زر تعديل (سنفعله لاحقًا)
+                        icon: const Icon(Icons.edit, color: Colors.blueGrey), // زر تعديل
                         onPressed: () {
-                          // هنا سننتقل إلى شاشة تفاصيل/تعديل الفاتورة
-                          print('View/Edit invoice: ${invoice.id}');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('سيتم فتح شاشة تعديل الفاتورة هنا')),
+                          // ⭐ الانتقال إلى شاشة تفاصيل/تعديل الفاتورة وتمرير الفاتورة
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddEditInvoiceScreen(invoice: invoice),
+                            ),
                           );
+                          print('View/Edit invoice: ${invoice.id}');
                         },
                       ),
                       IconButton(
@@ -159,21 +163,17 @@ class _SalesInvoicesScreenState extends State<SalesInvoicesScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // ⭐ هنا سننتقل إلى شاشة إضافة فاتورة جديدة فارغة
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     builder: (context) => const AddEditInvoiceScreen(), // يجب إنشاء AddEditInvoiceScreen لاحقًا
-          //   ),
-          // );
-          print('Add New Invoice button pressed');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('سيتم فتح شاشة إضافة فاتورة هنا')),
+          // ⭐ الانتقال إلى شاشة إضافة فاتورة جديدة فارغة
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddEditInvoiceScreen(), // للانتقال إلى شاشة إضافة فاتورة جديدة
+            ),
           );
+          print('Add New Invoice button pressed');
         },
         child: const Icon(Icons.add),
       ),
     );
   }
 }
-
