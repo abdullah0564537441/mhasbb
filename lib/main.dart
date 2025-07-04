@@ -3,21 +3,20 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart'; // لإضافة path_provider لتهيئة Hive بشكل صحيح
 
-// استيراد الشاشات الرئيسية
+// استيراد الشاشات الرئيسية والتنقل
 import 'package:mhasbb/screens/home_screen.dart'; // HomeScreen سيكون الشاشة الرئيسية
 import 'package:mhasbb/screens/login_screen.dart';
-import 'package:mhasbb/screens/sales_invoices_screen.dart';
-import 'package:mhasbb/screens/add_edit_invoice_screen.dart';
-import 'package:mhasbb/screens/inventory_screen.dart'; // شاشة المخزون (التي هي ItemsScreen في الواقع)
-import 'package:mhasbb/screens/purchase_invoices_screen.dart'; // استيراد شاشة فواتير الشراء
-import 'package:mhasbb/screens/suppliers_screen.dart'; // استيراد شاشة الموردين
+import 'package:mhasbb/screens/sales_invoices_screen.dart'; // شاشة فواتير البيع (مكتملة)
+import 'package:mhasbb/screens/add_edit_invoice_screen.dart'; // شاشة إضافة/تعديل فاتورة
+import 'package:mhasbb/screens/inventory_screen.dart'; // شاشة المخزون (مكتملة)
+import 'package:mhasbb/screens/purchase_invoices_screen.dart'; // شاشة فواتير الشراء (مكتملة)
 
-// استيراد موديلات Hive
+// استيراد موديلات Hive (تأكد من وجودها)
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/invoice.dart';
-import 'package:mhasbb/models/supplier.dart'; // استيراد موديل المورد
+// بما أن شاشة الموردين غير مكتملة، لن نستورد موديل Supplier هنا إذا لم يستخدم في مكان آخر بالـ main
 
 // ---
 // تعريف متغير SharedPreferences العام
@@ -65,13 +64,14 @@ void main() async {
     Hive.registerAdapter(InvoiceItemAdapter());  // TypeId: 2
     Hive.registerAdapter(InvoiceTypeAdapter());  // TypeId: (موجود داخل InvoiceAdapter)
     Hive.registerAdapter(InvoiceAdapter());      // TypeId: 3
-    Hive.registerAdapter(SupplierAdapter());     // TypeId: 4 - محول المورد الجديد
+    // لا يتم تسجيل SupplierAdapter هنا، لأن موديل المورد غير مستخدم بشكل مباشر في Main
+    // إذا كنت تستخدم موديل Supplier في أي مكان آخر يتطلب تهيئته في Main، يجب عليك إضافته.
 
     // فتح جميع صناديق Hive (Boxes) التي ستخزن البيانات
     await Hive.openBox<Item>('items_box');
     await Hive.openBox<Customer>('customers_box');
     await Hive.openBox<Invoice>('invoices_box');
-    await Hive.openBox<Supplier>('suppliers_box'); // فتح صندوق الموردين الجديد
+    // لا يتم فتح صندوق suppliers_box هنا طالما شاشة الموردين ليست مكتملة
 
     print('✅ App Initialization Complete: SharedPreferences, Hive, and Hive Boxes are ready.');
   } catch (e, stacktrace) {
@@ -127,7 +127,7 @@ class _MyAppState extends State<MyApp> {
             textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
-        cardTheme: const CardTheme(
+        cardTheme: const CardThemeData(
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -178,16 +178,16 @@ class _MyAppState extends State<MyApp> {
         },
       ),
 
-      // تعريف المسارات الرئيسية (login و home) وإضافة مسارات شاشات الأقسام
+      // تعريف المسارات الرئيسية وإضافة مسارات الشاشات المكتملة
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(), // مسار /home يشير الآن إلى HomeScreen
-        '/sales_invoices': (context) => const SalesInvoicesScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/sales_invoices': (context) => const SalesInvoicesScreen(), // مكتملة
         '/add_edit_invoice': (context) => const AddEditInvoiceScreen(),
-        '/inventory': (context) => const InventoryScreen(),
-        '/purchase_invoices': (context) => const PurchaseInvoicesScreen(),
+        '/inventory': (context) => const InventoryScreen(), // مكتملة
+        '/purchase_invoices': (context) => const PurchaseInvoicesScreen(), // مكتملة
         '/customers': (context) => const PlaceholderScreen(title: 'العملاء'),
-        '/suppliers': (context) => const SuppliersScreen(),
+        '/suppliers': (context) => const PlaceholderScreen(title: 'الموردين'), // الآن تشير إلى PlaceholderScreen
         '/accounts': (context) => const PlaceholderScreen(title: 'كشف الحساب'),
         '/reports': (context) => const PlaceholderScreen(title: 'التقارير'),
         '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
