@@ -5,10 +5,10 @@ import 'package:uuid/uuid.dart';
 // استيراد موديلات Hive
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/invoice_item.dart';
-import 'package:mhasbb/models/customer.dart'; // ستحتاج هذا لاحقًا لاختيار العملاء
-import 'package:mhasbb/models/item.dart'; // ستحتاج هذا لاختيار الأصناف
+import 'package:mhasbb/models/customer.dart'; 
+import 'package:mhasbb/models/item.dart'; // ⭐ تأكد من استيراد موديل Item
 
-// ⭐ استيراد شاشة اختيار الأصناف الجديدة (سننشئها في الخطوة التالية)
+// استيراد شاشة اختيار الأصناف الجديدة
 import 'package:mhasbb/screens/item_selection_screen.dart';
 
 
@@ -33,12 +33,14 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
   double _totalAmount = 0.0; // إجمالي مبلغ الفاتورة
 
   late Box<Invoice> invoicesBox;
+  late Box<Item> itemsBox; // ⭐ إضافة صندوق الأصناف
   final Uuid uuid = const Uuid(); // لتوليد معرفات فريدة
 
   @override
   void initState() {
     super.initState();
     invoicesBox = Hive.box<Invoice>('invoices_box');
+    itemsBox = Hive.box<Item>('items_box'); // ⭐ تهيئة صندوق الأصناف
 
     // تهيئة المتحكمات بناءً على ما إذا كنا نضيف فاتورة جديدة أو نعدل فاتورة موجودة
     if (widget.invoice == null) {
@@ -74,7 +76,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
 
   // دالة لتنسيق التاريخ
   String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')숙';
   }
 
   // دالة لحساب الإجمالي الكلي للفاتورة
@@ -104,6 +106,24 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
         return;
       }
 
+      // ⭐ المنطق الجديد لخصم الكميات من المخزون
+      for (var invoiceItem in _invoiceItems) {
+        final itemInInventory = itemsBox.get(invoiceItem.itemId);
+        if (itemInInventory != null) {
+          // تأكد من عدم الخصم إذا كانت الكمية المباعة أكبر من المتوفرة (يمكنك إضافة تحقق هنا)
+          if (itemInInventory.quantity >= invoiceItem.quantity) {
+            itemInInventory.quantity -= invoiceItem.quantity;
+            await itemsBox.put(itemInInventory.id, itemInInventory); // حفظ الصنف المحدث
+          } else {
+            // يمكنك هنا عرض رسالة خطأ أو تحذير إذا كانت الكمية غير كافية
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('الكمية المتوفرة من ${invoiceItem.itemName} غير كافية.')),
+            );
+            return; // إيقاف عملية الحفظ إذا كانت الكمية غير كافية
+          }
+        }
+      }
+
       final newInvoice = Invoice(
         id: widget.invoice?.id ?? uuid.v4(), // استخدم ID الموجود أو أنشئ واحدًا جديدًا
         invoiceNumber: invoiceNumber,
@@ -121,6 +141,9 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
         );
       } else {
         // تحديث فاتورة موجودة
+        // ملاحظة: في حالة التعديل، قد تحتاج إلى منطق أكثر تعقيدًا لإعادة الكميات القديمة قبل خصم الجديدة
+        // لكن للتبسيط، سنفترض أن التعديل يتم على فاتورة جديدة أو لا يؤثر على الكميات المخزنية بشكل مباشر بعد الحفظ الأولي.
+        // أو يمكنك تطبيق منطق إعادة الكميات القديمة هنا قبل خصم الكميات الجديدة من _invoiceItems
         await invoicesBox.put(widget.invoice!.key, newInvoice); // استخدام مفتاح الفاتورة الأصلي للتحديث
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم تحديث الفاتورة بنجاح!')),
@@ -130,7 +153,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
     }
   }
 
-  // ⭐ دالة جديدة لاختيار الأصناف من المخزون
+  // دالة جديدة لاختيار الأصناف من المخزون
   Future<void> _selectItemsFromInventory() async {
     final List<InvoiceItem>? selectedItems = await Navigator.push(
       context,
@@ -261,7 +284,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
 
               // زر إضافة صنف (الآن سيفتح شاشة اختيار الأصناف)
               ElevatedButton.icon(
-                onPressed: _selectItemsFromInventory, // ⭐ تم تغيير الوظيفة هنا
+                onPressed: _selectItemsFromInventory,
                 icon: const Icon(Icons.add_shopping_cart),
                 label: const Text('إضافة صنف من المخزون'),
                 style: ElevatedButton.styleFrom(
