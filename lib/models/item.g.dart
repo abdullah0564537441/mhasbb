@@ -19,26 +19,29 @@ class ItemAdapter extends TypeAdapter<Item> {
     return Item(
       id: fields[0] as String,
       name: fields[1] as String,
-      purchasePrice: fields[2] as double,
-      sellingPrice: fields[3] as double,
-      stock: fields[4] as int,
+      quantity: fields[2] as double,
+      unit: fields[3] as String,
+      purchasePrice: fields[4] as double,
+      sellingPrice: fields[5] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, Item obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.purchasePrice)
+      ..write(obj.quantity)
       ..writeByte(3)
-      ..write(obj.sellingPrice)
+      ..write(obj.unit)
       ..writeByte(4)
-      ..write(obj.stock);
+      ..write(obj.purchasePrice)
+      ..writeByte(5)
+      ..write(obj.sellingPrice);
   }
 
   @override
