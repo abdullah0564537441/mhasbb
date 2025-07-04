@@ -5,6 +5,8 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // تعريف قائمة الأقسام التي ستظهر في الشاشة الرئيسية
+    // كل قسم يحتوي على عنوان، أيقونة، ومسار (route) للانتقال إليه
     final sections = [
       {'title': 'فواتير البيع', 'icon': Icons.receipt_long, 'route': '/sales_invoices'},
       {'title': 'فواتير الشراء', 'icon': Icons.shopping_cart, 'route': '/purchase_invoices'},
@@ -20,29 +22,31 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('الرئيسية'),
+        centerTitle: true, // لتوسيط العنوان في AppBar
       ),
       body: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(12.0), // مسافة بادئة حول الشبكة
         child: GridView.builder(
-          itemCount: sections.length,
+          itemCount: sections.length, // عدد العناصر في الشبكة هو عدد الأقسام
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 15,
-            crossAxisSpacing: 15,
-            childAspectRatio: 1,
+            crossAxisCount: 3, // 3 أعمدة في كل صف
+            mainAxisSpacing: 15, // المسافة الرأسية بين العناصر
+            crossAxisSpacing: 15, // المسافة الأفقية بين العناصر
+            childAspectRatio: 1, // نسبة العرض إلى الارتفاع لكل عنصر (1 تعني مربع)
           ),
           itemBuilder: (context, index) {
-            final section = sections[index];
+            final section = sections[index]; // الحصول على بيانات القسم الحالي
             return GestureDetector(
               onTap: () {
-                // التنقل الحقيقي إلى الشاشة المطلوبة
+                // عند النقر على القسم، يتم التنقل إلى المسار المحدد له
+                // يجب تعريف هذه المسارات في MaterialApp في ملف main.dart
                 Navigator.pushNamed(context, section['route'] as String);
               },
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.indigo.shade100,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
+                  color: Colors.indigo.shade100, // لون خلفية البطاقة
+                  borderRadius: BorderRadius.circular(15), // زوايا دائرية للبطاقة
+                  boxShadow: [ // ظل خفيف للبطاقة لإعطاء عمق
                     BoxShadow(
                       color: Colors.indigo.withOpacity(0.3),
                       blurRadius: 5,
@@ -51,16 +55,16 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center, // توسيط المحتويات عمودياً
                   children: [
                     Icon(
-                      section['icon'] as IconData,
+                      section['icon'] as IconData, // أيقونة القسم
                       size: 45,
                       color: Colors.indigo.shade700,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 10), // مسافة بين الأيقونة والنص
                     Text(
-                      section['title'] as String,
+                      section['title'] as String, // عنوان القسم
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                     ),
