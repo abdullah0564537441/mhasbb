@@ -4,9 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart'; // لاستخدام
 // استيراد الشاشات التي سيتم التنقل إليها
 import 'package:mhasbb/screens/login_screen.dart';
 import 'package:mhasbb/screens/sales_invoices_screen.dart';
-import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen
-// ⭐ استيراد شاشة المخزون الجديدة
-import 'package:mhasbb/screens/inventory_screen.dart'; 
+import 'package:mhasbb/screens/inventory_screen.dart'; // شاشة المخزون (هي ItemsScreen في الواقع)
+import 'package:mhasbb/screens/purchase_invoices_screen.dart'; // ⭐ استيراد شاشة فواتير الشراء
+import 'package:mhasbb/screens/suppliers_screen.dart'; // ⭐ استيراد شاشة الموردين
+import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen (للأقسام غير المكتملة)
 
 
 class HomeScreen extends StatelessWidget {
@@ -16,9 +17,10 @@ class HomeScreen extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('app_password'); // حذف كلمة المرور المحفوظة
+    // العودة إلى شاشة تسجيل الدخول وإزالة جميع المسارات السابقة
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (Route<dynamic> route) => false, // إزالة جميع المسارات السابقة
+      (Route<dynamic> route) => false,
     );
   }
 
@@ -28,12 +30,16 @@ class HomeScreen extends StatelessWidget {
       case 'فواتير البيع':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const SalesInvoicesScreen()));
         break;
-      case 'المخزون': // ⭐ تم تعديل هذا السطر
+      case 'المخزون':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const InventoryScreen()));
         break;
-      case 'فواتير الشراء':
+      case 'فواتير الشراء': // ⭐ تحديث: الانتقال إلى شاشة فواتير الشراء الفعلية
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const PurchaseInvoicesScreen()));
+        break;
+      case 'الموردين': // ⭐ تحديث: الانتقال إلى شاشة الموردين الفعلية
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const SuppliersScreen()));
+        break;
       case 'العملاء':
-      case 'الموردين':
       case 'كشف الحساب':
       case 'التقارير':
       case 'الضريبة':
@@ -42,6 +48,7 @@ class HomeScreen extends StatelessWidget {
         Navigator.push(context, MaterialPageRoute(builder: (context) => PlaceholderScreen(title: sectionName)));
         break;
       default:
+        // في حالة وجود قسم غير معروف، لا تفعل شيئًا أو عرض رسالة خطأ
         break;
     }
   }
@@ -69,7 +76,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             _buildSectionCard(context, 'فواتير البيع', Icons.receipt, Colors.blueAccent),
             _buildSectionCard(context, 'فواتير الشراء', Icons.shopping_cart, Colors.green),
-            _buildSectionCard(context, 'المخزون', Icons.inventory_2, Colors.teal), // أيقونة ولون للمخزون
+            _buildSectionCard(context, 'المخزون', Icons.inventory_2, Colors.teal),
             _buildSectionCard(context, 'العملاء', Icons.people, Colors.orange),
             _buildSectionCard(context, 'الموردين', Icons.local_shipping, Colors.purple),
             _buildSectionCard(context, 'كشف الحساب', Icons.account_balance_wallet, Colors.redAccent),
@@ -99,7 +106,7 @@ class HomeScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.titleMedium?.color, // استخدم لون النص من الثيم
+                color: Theme.of(context).textTheme.titleMedium?.color,
               ),
               textAlign: TextAlign.center,
             ),
