@@ -1,7 +1,7 @@
 // lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
-import 'package:mhasb/screens/home_screen.dart';
-import 'package:mhasb/main.dart'; // استيراد main.dart للوصول إلى المتغير العام 'prefs'
+import 'package:mhasbb/screens/home_screen.dart';
+import 'package:mhasbb/main.dart'; // استيراد main.dart للوصول إلى المتغير العام 'prefs'
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
