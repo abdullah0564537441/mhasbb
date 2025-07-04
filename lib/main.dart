@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart'; // ستبقى موجودة للاستخدام المستقبلي
-import 'package:shared_preferences/shared_preferences.dart'; // لإدارة التفضيلات البسيطة (مستخدمة في LoginScreen)
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // استيراد الشاشات الرئيسية
-import 'package:mhasbb/screens/home_screen.dart'; // تم التعديل إلى mhasbb
-import 'package:mhasbb/screens/login_screen.dart'; // تم التعديل إلى mhasbb
+import 'package:mhasbb/screens/home_screen.dart';
+import 'package:mhasbb/screens/login_screen.dart';
+// ⭐ استيراد شاشة فواتير البيع الجديدة (ستقوم بإنشائها لاحقًا)
+import 'package:mhasbb/screens/sales_invoices_screen.dart'; 
+
+// ⭐ استيراد موديلات Hive التي قمت بإنشائها
+import 'package:mhasbb/models/item.dart';
+import 'package:mhasbb/models/customer.dart';
+import 'package:mhasbb/models/invoice_item.dart';
+import 'package:mhasbb/models/invoice.dart';
 
 // ---
 // تعريف متغير SharedPreferences العام فقط، لأنه هو المطلوب حاليًا للوحة الدخول
@@ -41,14 +49,28 @@ void main() async {
     // تهيئة SharedPreferences، لأن LoginScreen تعتمد عليها مباشرة
     prefs = await SharedPreferences.getInstance();
 
-    // يمكنك إبقاء Hive.initFlutter() هنا استعدادًا للمراحل القادمة،
-    // لكننا لن نفتح أي صناديق أو نسجل محولات هنا الآن.
-    await Hive.initFlutter(); // تهيئة Hive (فقط التهيئة الأساسية بدون فتح صناديق محددة)
+    // ⭐ تهيئة Hive
+    await Hive.initFlutter();
+    
+    // ⭐ تسجيل محولات (adapters) Hive لموديلات البيانات
+    // تأكد أن أرقام TypeId (0, 1, 2, 3) فريدة ولا تتكرر بين الموديلات
+    Hive.registerAdapter(ItemAdapter());
+    Hive.registerAdapter(CustomerAdapter());
+    Hive.registerAdapter(InvoiceItemAdapter());
+    Hive.registerAdapter(InvoiceAdapter());
 
-    print('✅ SharedPreferences initialized. Hive initialized.');
+    // ⭐ فتح صناديق Hive (Boxes) التي ستخزن البيانات
+    // يمكنك فتح صناديق إضافية هنا لاحقًا إذا احتجت (مثل 'products_box', 'users_box')
+    await Hive.openBox<Item>('items_box');
+    await Hive.openBox<Customer>('customers_box');
+    await Hive.openBox<Invoice>('invoices_box'); // الفواتير نفسها
+    // لا نحتاج لفتح InvoiceItemBox بشكل مباشر لأنه جزء من Invoice
+
+    print('✅ App Initialization Complete: SharedPreferences, Hive, and Hive Boxes are ready.');
   } catch (e, stacktrace) {
     print('❌ Critical Error during App Initialization: $e');
     print('Stacktrace: $stacktrace');
+    // يمكنك عرض رسالة خطأ للمستخدم هنا أو تسجيلها في خدمة مراقبة الأخطاء
   }
 
   runApp(const MyApp());
@@ -148,20 +170,21 @@ class _MyAppState extends State<MyApp> {
         },
       ),
 
-      // تعريف المسارات الرئيسية فقط (login و home)
+      // تعريف المسارات الرئيسية (login و home) وإضافة مسارات شاشات الأقسام
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
-        // يمكنك إعادة إضافة مسارات PlaceholderScreen هنا لاحقاً إذا أردت
-        // '/sales_invoices': (context) => const PlaceholderScreen(title: 'فواتير البيع'),
-        // '/purchase_invoices': (context) => const PlaceholderScreen(title: 'فواتير الشراء'),
-        // '/inventory': (context) => const PlaceholderScreen(title: 'المخزون'),
-        // '/customers': (context) => const PlaceholderScreen(title: 'العملاء'),
-        // '/suppliers': (context) => const PlaceholderScreen(title: 'الموردين'),
-        // '/accounts': (context) => const PlaceholderScreen(title: 'كشف الحساب'),
-        // '/reports': (context) => const PlaceholderScreen(title: 'التقارير'),
-        // '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
-        // '/settings': (context) => const PlaceholderScreen(title: 'الإعدادات'),
+        // ⭐ إضافة مسار شاشة فواتير البيع (مهم جداً!)
+        '/sales_invoices': (context) => const SalesInvoicesScreen(), 
+        // يمكنك لاحقًا إضافة مسارات لبقية الأقسام هنا:
+        '/purchase_invoices': (context) => const PlaceholderScreen(title: 'فواتير الشراء'),
+        '/inventory': (context) => const PlaceholderScreen(title: 'المخزون'),
+        '/customers': (context) => const PlaceholderScreen(title: 'العملاء'),
+        '/suppliers': (context) => const PlaceholderScreen(title: 'الموردين'),
+        '/accounts': (context) => const PlaceholderScreen(title: 'كشف الحساب'),
+        '/reports': (context) => const PlaceholderScreen(title: 'التقارير'),
+        '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
+        '/settings': (context) => const PlaceholderScreen(title: 'الإعدادات'),
       },
     );
   }
