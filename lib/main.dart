@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart'; // ستبقى موجودة للاستخدام المستقبلي ولكن لن تفتح صناديق متعددة الآن
+import 'package:hive_flutter/hive_flutter.dart'; // ستبقى موجودة للاستخدام المستقبلي
 import 'package:shared_preferences/shared_preferences.dart'; // لإدارة التفضيلات البسيطة (مستخدمة في LoginScreen)
 
-// استيراد الشاشات الرئيسية فقط
-import 'package:mhasbb/screens/home_screen.dart';
-import 'package:mhasbb/screens/login_screen.dart';
+// استيراد الشاشات الرئيسية
+import 'package:mhasbb/screens/home_screen.dart'; // تم التعديل إلى mhasbb
+import 'package:mhasbb/screens/login_screen.dart'; // تم التعديل إلى mhasbb
 
 // ---
 // تعريف متغير SharedPreferences العام فقط، لأنه هو المطلوب حاليًا للوحة الدخول
 late SharedPreferences prefs;
 
-// شاشة مؤقتة لكل قسم، لن تستخدم الآن بشكل مباشر ولكنها لا تزال موجودة
-// إذا أردت استخدامها لاحقًا مع الـ routes التي ستبقيها معلقة (أو تحذفها)
+// شاشة مؤقتة لكل قسم، ستبقى موجودة لكن لن تستخدم بشكل مباشر في هذه المرحلة
 class PlaceholderScreen extends StatelessWidget {
   final String title;
   const PlaceholderScreen({super.key, required this.title});
@@ -39,15 +38,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // تهيئة SharedPreferences فقط، لأن LoginScreen تعتمد عليها مباشرة
+    // تهيئة SharedPreferences، لأن LoginScreen تعتمد عليها مباشرة
     prefs = await SharedPreferences.getInstance();
 
     // يمكنك إبقاء Hive.initFlutter() هنا استعدادًا للمراحل القادمة،
     // لكننا لن نفتح أي صناديق أو نسجل محولات هنا الآن.
-    // إذا كنت لا تخطط لاستخدام Hive على الإطلاق في هذه المرحلة، يمكنك إزالة السطر أدناه.
-    await Hive.initFlutter();
+    await Hive.initFlutter(); // تهيئة Hive (فقط التهيئة الأساسية بدون فتح صناديق محددة)
 
-    print('✅ SharedPreferences initialized. Hive initialized (no boxes opened yet).');
+    print('✅ SharedPreferences initialized. Hive initialized.');
   } catch (e, stacktrace) {
     print('❌ Critical Error during App Initialization: $e');
     print('Stacktrace: $stacktrace');
@@ -56,7 +54,7 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget { // غيرتها إلى StatefulWidget لكي أتمكن من استخدام FutureBuilder
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
@@ -70,7 +68,7 @@ class _MyAppState extends State<MyApp> {
       title: 'تطبيق إدارة المبيعات والمخزون',
       debugShowCheckedModeBanner: false,
 
-      // تطبيق الثيم الأساسي (كما كان في النسخة الكاملة)
+      // تحديد الثيم العام للتطبيق
       theme: ThemeData(
         primarySwatch: Colors.indigo,
         visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -128,7 +126,7 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
 
-      // تحديد الشاشة الأولية بناءً على حالة كلمة المرور (كما كان سابقًا)
+      // تحديد الشاشة الأولية بناءً على حالة كلمة المرور
       home: FutureBuilder<bool>(
         future: _checkPasswordStatus(),
         builder: (context, snapshot) {
@@ -151,10 +149,10 @@ class _MyAppState extends State<MyApp> {
       ),
 
       // تعريف المسارات الرئيسية فقط (login و home)
-      // يمكنك إبقاء المسارات الأخرى معلقة كتعليقات إذا أردت إعادتها لاحقًا
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
+        // يمكنك إعادة إضافة مسارات PlaceholderScreen هنا لاحقاً إذا أردت
         // '/sales_invoices': (context) => const PlaceholderScreen(title: 'فواتير البيع'),
         // '/purchase_invoices': (context) => const PlaceholderScreen(title: 'فواتير الشراء'),
         // '/inventory': (context) => const PlaceholderScreen(title: 'المخزون'),
