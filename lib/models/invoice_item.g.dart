@@ -19,23 +19,26 @@ class InvoiceItemAdapter extends TypeAdapter<InvoiceItem> {
     return InvoiceItem(
       itemId: fields[0] as String,
       itemName: fields[1] as String,
-      sellingPrice: fields[2] as double,
-      quantity: fields[3] as int,
+      quantity: fields[2] as double,
+      unit: fields[3] as String,
+      sellingPrice: fields[4] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, InvoiceItem obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.itemId)
       ..writeByte(1)
       ..write(obj.itemName)
       ..writeByte(2)
-      ..write(obj.sellingPrice)
+      ..write(obj.quantity)
       ..writeByte(3)
-      ..write(obj.quantity);
+      ..write(obj.unit)
+      ..writeByte(4)
+      ..write(obj.sellingPrice);
   }
 
   @override
