@@ -18,6 +18,8 @@ class _ItemSelectionScreenState extends State<ItemSelectionScreen> {
   late Box<Item> itemsBox;
   Map<String, double> _selectedQuantities = {}; // {item.id: quantity} لتتبع الكميات المختارة
   Map<String, Item> _allItemsMap = {}; // {item.id: Item} لسهولة الوصول للصنف
+  TextEditingController _searchController = TextEditingController(); // ⭐ متحكم حقل البحث
+  List<Item> _filteredItems = []; // ⭐ قائمة الأصناف بعد التصفية
 
   @override
   void initState() {
@@ -31,9 +33,31 @@ class _ItemSelectionScreenState extends State<ItemSelectionScreen> {
 
     // تهيئة الكميات المختارة بناءً على الأصناف الموجودة في الفاتورة
     for (var invoiceItem in widget.existingInvoiceItems) {
-      // ⭐ التعديل هنا: التأكد من أن الكمية هي double
       _selectedQuantities[invoiceItem.itemId] = invoiceItem.quantity.toDouble(); 
     }
+
+    // ⭐ تهيئة قائمة الأصناف المفلترة عند البدء
+    _filterItems();
+
+    // ⭐ الاستماع للتغييرات في حقل البحث
+    _searchController.addListener(_filterItems);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterItems); // ⭐ إزالة المستمع
+    _searchController.dispose(); // ⭐ التخلص من المتحكم
+    super.dispose();
+  }
+
+  // ⭐ دالة لتصفية الأصناف بناءً على نص البحث
+  void _filterItems() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredItems = itemsBox.values.where((item) {
+        return item.name.toLowerCase().contains(query);
+      }).toList();
+    });
   }
 
   // دالة لزيادة الكمية
@@ -99,29 +123,72 @@ class _ItemSelectionScreenState extends State<ItemSelectionScreen> {
           ),
         ],
       ),
-      body: ValueListenableBuilder<Box<Item>>(
-        valueListenable: itemsBox.listenable(),
-        builder: (context, box, _) {
-          if (box.isEmpty) {
-            return const Center(
-              child: Text(
-                'لا توجد أصناف في المخزون.\nالرجاء إضافة أصناف أولاً.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, color: Colors.grey),
+      body: Column( // ⭐ استخدام Column لاستيعاب حقل البحث وقائمة الأصناف
+        children: [
+          // ⭐ حقل البحث
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'بحث عن صنف',
+                hintText: 'أدخل اسم الصنف',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Theme.of(context).primaryColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade400),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+                ),
               ),
-            );
-          }
+            ),
+          ),
+          // ⭐ قائمة الأصناف المفلترة
+          Expanded(
+            child: ValueListenableBuilder<Box<Item>>(
+              valueListenable: itemsBox.listenable(),
+              builder: (context, box, _) {
+                // نادراً ما نحتاج لتحديث _filteredItems هنا، لأنه يحدث مع _searchController.addListener
+                // ولكن يمكننا إعادة التصفية للتأكد من أنها تعكس أي تغييرات في الصندوق (مثل إضافة صنف جديد أثناء فتح الشاشة)
+                if (_searchController.text.isEmpty) { // إذا كان حقل البحث فارغاً، اعرض كل الأصناف
+                   _filteredItems = box.values.toList();
+                } else { // وإلا، قم بالتصفية بناءً على المدخل الحالي
+                   _filterItems(); // إعادة تصفية القائمة بعد أي تغيير في الصندوق
+                }
 
-          final List<Item> availableItems = box.values.toList();
 
-          return Column(
-            children: [
-              Expanded(
-                child: ListView.builder(
+                if (box.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'لا توجد أصناف في المخزون.\nالرجاء إضافة أصناف أولاً.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  );
+                }
+
+                if (_filteredItems.isEmpty && _searchController.text.isNotEmpty) {
+                  return const Center(
+                    child: Text(
+                      'لا توجد أصناف مطابقة لعملية البحث.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  );
+                }
+                
+                // استخدام _filteredItems بدلاً من availableItems
+                return ListView.builder(
                   padding: const EdgeInsets.all(8.0),
-                  itemCount: availableItems.length,
+                  itemCount: _filteredItems.length,
                   itemBuilder: (context, index) {
-                    final item = availableItems[index];
+                    final item = _filteredItems[index]; // ⭐ استخدام _filteredItems هنا
                     final currentQuantity = _selectedQuantities[item.id] ?? 0.0; // الكمية المختارة حاليا
 
                     return Card(
@@ -172,23 +239,23 @@ class _ItemSelectionScreenState extends State<ItemSelectionScreen> {
                       ),
                     );
                   },
-                ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton.icon(
+              onPressed: _returnSelectedItems,
+              icon: const Icon(Icons.check),
+              label: const Text('تأكيد واضافة الأصناف للفاتورة'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: ElevatedButton.icon(
-                  onPressed: _returnSelectedItems,
-                  icon: const Icon(Icons.check),
-                  label: const Text('تأكيد واضافة الأصناف للفاتورة'),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
