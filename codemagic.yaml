@@ -1,31 +1,15 @@
-name: Build Android APK
+workflows:
+  build-android-apk:
+    name: Build Android APK
+    max_build_duration: 60
+    environment:
+      flutter: stable
+    scripts:
+      - name: Get dependencies
+        script: flutter pub get
 
-on:
-  push:
-    branches:
-      - '**'   # كل الفروع
+      - name: Build APK release
+        script: flutter build apk --release --split-per-abi
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release --split-per-abi
-
-      - name: Upload APK artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: apk-files
-          path: build/app/outputs/flutter-apk/*.apk
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
