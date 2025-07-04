@@ -1,15 +1,15 @@
-Plugins {
+// التعديل هنا: استخدام بناء جملة 'plugins {}' بدلاً من 'Plugins {}'
+plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev.flutter.flutter-gradle-plugin")
+    id("dev.flutter.flutter-gradle-plugin") // يجب أن يكون هذا آخر واحد لـ Flutter
 }
 
 android {
     namespace = "com.example.mhasbb"
     compileSdk = flutter.compileSdkVersion
     
-    // ➡️ هذا هو السطر المُعدّل: تم تعيين ndkVersion إلى الإصدار المطلوب
+    // تم تعيين ndkVersion إلى الإصدار المطلوب
     ndkVersion = "27.0.12077973" 
 
     compileOptions {
@@ -18,7 +18,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = JavaVersion.VERSION_11.toString() // يجب أن يكون "11" كسلسلة نصية
     }
 
     defaultConfig {
