@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +17,12 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.indigo,
         fontFamily: 'Roboto',
       ),
-      home: const LoginScreen(), // واجهة تسجيل الدخول
+      initialRoute: '/login', // البداية من شاشة تسجيل الدخول
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const HomeScreen(),
+        // هنا يمكن تضيف باقي الشاشات لاحقاً
+      },
     );
   }
 }
