@@ -1,3 +1,4 @@
+// lib/screens/purchase_invoices_screen.dart
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart'; // لتنسيق التاريخ والأرقام
@@ -25,7 +26,8 @@ class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
   double _calculateInvoiceTotal(Invoice invoice) {
     double total = 0.0;
     for (var item in invoice.items) {
-      total += item.quantity * item.price;
+      // ⭐ تم التعديل هنا: استخدام item.sellingPrice بدلاً من item.price
+      total += item.quantity * item.sellingPrice;
     }
     return total;
   }
