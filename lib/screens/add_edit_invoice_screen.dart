@@ -25,7 +25,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
   late TextEditingController _invoiceNumberController;
   late TextEditingController _dateController;
   Customer? _selectedCustomer;
-  final List<InvoiceItem> _invoiceItems = [];
+  final List<InvoiceItem> _invoiceItems = []; // قائمة الأصناف في الفاتورة
 
   late Box<Invoice> invoicesBox;
   late Box<Item> itemsBox;
@@ -48,9 +48,9 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
     } else {
       // تعديل فاتورة موجودة
       _invoiceNumberController = TextEditingController(text: widget.invoice!.invoiceNumber);
-      _selectedDate = widget.invoice!.date; // ⭐ تم التعديل هنا: invoiceDate إلى date
+      _selectedDate = widget.invoice!.date;
       _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_selectedDate));
-      _invoiceItems.addAll(widget.invoice!.items); // تم إزالة final من 'items' في Invoice
+      _invoiceItems.addAll(List<InvoiceItem>.from(widget.invoice!.items));
       if (widget.invoice!.customerId != null) {
         _selectedCustomer = customersBox.get(widget.invoice!.customerId);
       }
@@ -63,7 +63,6 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
     if (salesInvoices.isEmpty) {
       return 'INV-0001';
     }
-    // البحث عن أعلى رقم فاتورة مبيعات حالي
     int maxNumber = 0;
     for (var invoice in salesInvoices) {
       if (invoice.invoiceNumber.startsWith('INV-')) {
@@ -103,84 +102,146 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
   }
 
   void _addInvoiceItem() {
+    Item? selectedItemObject;
+    double tempQuantity = 1.0;
+    // ⭐ جديد: TextEditingController لحقل سعر البيع
+    final TextEditingController _sellingPriceController = TextEditingController();
+
+    final _itemFormKey = GlobalKey<FormState>();
+    final TextEditingController _itemSearchController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) {
-        String? selectedItemName;
-        double quantity = 1.0;
-        double sellingPrice = 0.0; // سعر البيع لبند الفاتورة
-
         return AlertDialog(
           title: const Text('إضافة صنف للفاتورة'),
           content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
-              return SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'الصنف',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              // ⭐ تحديث سعر البيع في المتحكم عند كل إعادة بناء (لضمان تحديث initialValue)
+              if (selectedItemObject != null && _sellingPriceController.text.isEmpty) {
+                _sellingPriceController.text = selectedItemObject!.sellingPrice.toStringAsFixed(2);
+              }
+
+              return Form(
+                key: _itemFormKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Autocomplete<Item>(
+                        displayStringForOption: (Item option) => option.name,
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<Item>.empty();
+                          }
+                          return itemsBox.values.where((item) {
+                            return item.name.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                          });
+                        },
+                        onSelected: (Item selection) {
+                          setState(() {
+                            selectedItemObject = selection;
+                            _itemSearchController.text = selection.name;
+                            // ⭐ تحديث قيمة المتحكم الخاص بسعر البيع هنا
+                            _sellingPriceController.text = selection.sellingPrice.toStringAsFixed(2);
+                            tempQuantity = 1.0; // إعادة تعيين الكمية لـ 1 عند اختيار صنف جديد
+                          });
+                        },
+                        fieldViewBuilder: (BuildContext context,
+                            TextEditingController fieldTextEditingController,
+                            FocusNode fieldFocusNode,
+                            VoidCallback onFieldSubmitted) {
+                          _itemSearchController.text = fieldTextEditingController.text;
+                          return TextFormField(
+                            controller: fieldTextEditingController,
+                            focusNode: fieldFocusNode,
+                            decoration: InputDecoration(
+                              labelText: 'البحث عن صنف',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            validator: (value) {
+                              // يتم التحقق من وجود الكائن المحدد وليس فقط النص
+                              if (value == null || value.isEmpty || selectedItemObject == null || selectedItemObject!.name.toLowerCase() != value.toLowerCase()) {
+                                return 'الرجاء اختيار صنف موجود من القائمة';
+                              }
+                              return null;
+                            },
+                          );
+                        },
+                        optionsViewBuilder: (BuildContext context,
+                            AutocompleteOnSelected<Item> onSelected,
+                            Iterable<Item> options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 4.0,
+                              child: SizedBox(
+                                height: 200.0,
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  itemCount: options.length,
+                                  itemBuilder: (BuildContext context, int index) {
+                                    final Item option = options.elementAt(index);
+                                    return GestureDetector(
+                                      onTap: () {
+                                        onSelected(option);
+                                      },
+                                      child: ListTile(
+                                        title: Text(option.name),
+                                        subtitle: Text('سعر البيع: ${option.sellingPrice.toStringAsFixed(2)}'),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                      value: selectedItemName,
-                      items: itemsBox.values.map((item) {
-                        return DropdownMenuItem(
-                          value: item.name,
-                          child: Text(item.name),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedItemName = value;
-                          final selectedItem = itemsBox.values.firstWhere((item) => item.name == selectedItemName);
-                          sellingPrice = selectedItem.sellingPrice; // ⭐ استخدام sellingPrice من موديل Item
-                        });
-                      },
-                      validator: (value) {
-                        if (value == null) {
-                          return 'الرجاء اختيار صنف';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'الكمية',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'الكمية',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        keyboardType: TextInputType.number,
+                        initialValue: tempQuantity.toString(), // يمكن ربط هذا بـ controller أيضًا إذا أردنا
+                        onChanged: (value) {
+                          tempQuantity = double.tryParse(value) ?? 1.0;
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! <= 0) {
+                            return 'الرجاء إدخال كمية صحيحة أكبر من 0';
+                          }
+                          return null;
+                        },
                       ),
-                      keyboardType: TextInputType.number,
-                      initialValue: quantity.toString(),
-                      onChanged: (value) {
-                        quantity = double.tryParse(value) ?? 1.0;
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! <= 0) {
-                          return 'الرجاء إدخال كمية صحيحة';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'سعر البيع',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        // ⭐ ربط حقل السعر بالـ TextEditingController
+                        controller: _sellingPriceController,
+                        decoration: InputDecoration(
+                          labelText: 'سعر البيع',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        keyboardType: TextInputType.number,
+                        // initialValue: tempSellingPrice.toStringAsFixed(2), // لم نعد بحاجة لها
+                        onChanged: (value) {
+                          // ⭐ يجب تحديث tempSellingPrice من قيمة المتحكم
+                          // لأن المستخدم قد يقوم بتعديلها يدوياً بعد الجلب التلقائي
+                          selectedItemObject = selectedItemObject?.copyWith(
+                            sellingPrice: double.tryParse(value) ?? 0.0,
+                          );
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! < 0) {
+                            return 'الرجاء إدخال سعر صحيح';
+                          }
+                          return null;
+                        },
                       ),
-                      keyboardType: TextInputType.number,
-                      initialValue: sellingPrice.toStringAsFixed(2),
-                      onChanged: (value) {
-                        sellingPrice = double.tryParse(value) ?? 0.0;
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! < 0) {
-                          return 'الرجاء إدخال سعر صحيح';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -190,22 +251,28 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
               child: const Text('إلغاء'),
               onPressed: () {
                 Navigator.of(context).pop();
+                _sellingPriceController.dispose(); // ⭐ التخلص من المتحكم عند إغلاق الـ Dialog
               },
             ),
             ElevatedButton(
               onPressed: () {
-                if (selectedItemName != null && quantity > 0 && sellingPrice >= 0) {
-                  final newItem = InvoiceItem(
-                    itemId: itemsBox.values.firstWhere((item) => item.name == selectedItemName!).id,
-                    itemName: selectedItemName!,
-                    quantity: quantity,
-                    sellingPrice: sellingPrice,
-                    unit: itemsBox.values.firstWhere((item) => item.name == selectedItemName!).unit,
-                  );
-                  setState(() {
-                    _invoiceItems.add(newItem);
-                  });
-                  Navigator.of(context).pop();
+                if (_itemFormKey.currentState!.validate()) {
+                  _itemFormKey.currentState!.save();
+
+                  if (selectedItemObject != null) {
+                    final newItem = InvoiceItem(
+                      itemId: selectedItemObject!.id,
+                      itemName: selectedItemObject!.name,
+                      quantity: tempQuantity,
+                      sellingPrice: double.tryParse(_sellingPriceController.text) ?? 0.0, // ⭐ جلب القيمة النهائية من المتحكم
+                      unit: selectedItemObject!.unit,
+                    );
+                    setState(() {
+                      _invoiceItems.add(newItem);
+                    });
+                    Navigator.of(context).pop();
+                    _sellingPriceController.dispose(); // ⭐ التخلص من المتحكم عند إغلاق الـ Dialog
+                  }
                 }
               },
               child: const Text('إضافة'),
@@ -225,51 +292,67 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
   double _calculateTotal() {
     double total = 0.0;
     for (var item in _invoiceItems) {
-      total += item.quantity * item.sellingPrice; // ⭐ تم التعديل هنا: استخدام sellingPrice
+      total += item.quantity * item.sellingPrice;
     }
     return total;
   }
 
   Future<void> _saveInvoice() async {
     if (_formKey.currentState!.validate()) {
+      if (_invoiceItems.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('الرجاء إضافة صنف واحد على الأقل للفاتورة.')),
+        );
+        return;
+      }
+
       _formKey.currentState!.save();
 
       final String invoiceNumber = _invoiceNumberController.text.trim();
       final String? customerId = _selectedCustomer?.id;
       final String? customerName = _selectedCustomer?.name;
 
-      if (widget.invoice == null) {
-        // إضافة فاتورة جديدة
-        final newInvoice = Invoice(
-          id: uuid.v4(),
-          invoiceNumber: invoiceNumber,
-          type: InvoiceType.sale, // نوع الفاتورة: بيع
-          date: _selectedDate,
-          items: _invoiceItems,
-          customerId: customerId,
-          customerName: customerName,
-          supplierId: null, // فاتورة بيع لا تحتاج supplierId
-          supplierName: null, // فاتورة بيع لا تحتاج supplierName
-        );
-        await invoicesBox.put(newInvoice.id, newInvoice);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إضافة فاتورة المبيعات بنجاح!')),
-        );
-      } else {
-        // تحديث فاتورة موجودة
-        final existingInvoice = widget.invoice!;
-        existingInvoice.invoiceNumber = invoiceNumber;
-        existingInvoice.date = _selectedDate;
-        existingInvoice.items = _invoiceItems;
-        existingInvoice.customerId = customerId;
-        existingInvoice.customerName = customerName;
+      try {
+        if (widget.invoice == null) {
+          final newInvoice = Invoice(
+            id: uuid.v4(),
+            invoiceNumber: invoiceNumber,
+            type: InvoiceType.sale,
+            date: _selectedDate,
+            items: _invoiceItems.toList(),
+            customerId: customerId,
+            customerName: customerName,
+            supplierId: null,
+            supplierName: null,
+          );
+          await invoicesBox.put(newInvoice.id, newInvoice);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم إضافة فاتورة المبيعات بنجاح!')),
+          );
+        } else {
+          final existingInvoice = widget.invoice!;
+          existingInvoice.invoiceNumber = invoiceNumber;
+          existingInvoice.date = _selectedDate;
+          existingInvoice.items = _invoiceItems.toList();
+          existingInvoice.customerId = customerId;
+          existingInvoice.customerName = customerName;
 
-        await existingInvoice.save();
+          await existingInvoice.save();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم تحديث فاتورة المبيعات بنجاح!')),
+          );
+        }
+        Navigator.of(context).pop();
+      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم تحديث فاتورة المبيعات بنجاح!')),
+          SnackBar(content: Text('حدث خطأ أثناء حفظ الفاتورة: $e')),
         );
+        debugPrint('Hive Save Error: $e');
       }
-      Navigator.of(context).pop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الرجاء إكمال جميع الحقول المطلوبة بشكل صحيح.')),
+      );
     }
   }
 
@@ -364,32 +447,38 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  _invoiceItems.isEmpty
-                      ? const Text('لا توجد أصناف في الفاتورة حتى الآن.')
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _invoiceItems.length,
-                          itemBuilder: (context, index) {
-                            final item = _invoiceItems[index];
-                            final itemTotal = item.quantity * item.sellingPrice;
-                            final numberFormat = NumberFormat('#,##0.00', 'en_US');
+                  ValueListenableBuilder<List<InvoiceItem>>(
+                    valueListenable: ValueNotifier(_invoiceItems),
+                    builder: (context, currentItems, child) {
+                      if (currentItems.isEmpty) {
+                        return const Text('لا توجد أصناف في الفاتورة حتى الآن.');
+                      }
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: currentItems.length,
+                        itemBuilder: (context, index) {
+                          final item = currentItems[index];
+                          final itemTotal = item.quantity * item.sellingPrice;
+                          final numberFormat = NumberFormat('#,##0.00', 'en_US');
 
-                            return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 4.0),
-                              child: ListTile(
-                                title: Text(item.itemName),
-                                subtitle: Text(
-                                  'الكمية: ${item.quantity} ${item.unit} x السعر: ${numberFormat.format(item.sellingPrice)} = الإجمالي: ${numberFormat.format(itemTotal)}',
-                                ),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _removeInvoiceItem(index),
-                                ),
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: ListTile(
+                              title: Text(item.itemName),
+                              subtitle: Text(
+                                'الكمية: ${item.quantity} ${item.unit} x السعر: ${numberFormat.format(item.sellingPrice)} = الإجمالي: ${numberFormat.format(itemTotal)}',
                               ),
-                            );
-                          },
-                        ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _removeInvoiceItem(index),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                   const SizedBox(height: 24),
                   Text(
                     'الإجمالي الكلي للفاتورة: ${NumberFormat('#,##0.00', 'en_US').format(_calculateTotal())}',
