@@ -8,7 +8,7 @@ part of 'customer.dart';
 
 class CustomerAdapter extends TypeAdapter<Customer> {
   @override
-  final int typeId = 1;
+  final int typeId = 6;
 
   @override
   Customer read(BinaryReader reader) {
@@ -19,23 +19,29 @@ class CustomerAdapter extends TypeAdapter<Customer> {
     return Customer(
       id: fields[0] as String,
       name: fields[1] as String,
-      phone: fields[2] as String?,
+      phoneNumber: fields[2] as String?,
       address: fields[3] as String?,
+      email: fields[4] as String?,
+      notes: fields[5] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Customer obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.phone)
+      ..write(obj.phoneNumber)
       ..writeByte(3)
-      ..write(obj.address);
+      ..write(obj.address)
+      ..writeByte(4)
+      ..write(obj.email)
+      ..writeByte(5)
+      ..write(obj.notes);
   }
 
   @override
