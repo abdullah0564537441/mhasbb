@@ -1,7 +1,8 @@
 // lib/screens/add_edit_purchase_invoice_screen.dart
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:uuid/uuid.
+import 'package:uuid/uuid.dart'; // ⭐ لاحظ إضافة .dart;
+
 import 'package:intl/intl.dart'; // لتنسيق التاريخ والأرقام
 
 import 'package:mhasbb/models/invoice.dart';
