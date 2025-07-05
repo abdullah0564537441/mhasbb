@@ -201,12 +201,12 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                       }
 
                       if (parties.isEmpty) {
-                        return const DropdownButtonFormField<String>(
-                          decoration: InputDecoration(
+                        return DropdownButtonFormField<String>( // ⭐⭐ تم إزالة 'const' من هنا
+                          decoration: const InputDecoration(
                             labelText: 'لا يوجد عملاء/موردين',
                             border: OutlineInputBorder(),
                           ),
-                          items: [],
+                          items: const [],
                           onChanged: null,
                           value: null,
                         );
