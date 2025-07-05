@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path_provider/path_provider.dart'; // لإضافة path_provider لتهيئة Hive بشكل صحيح
+import 'package:path_provider/path_provider.dart';
 
 // استيراد الشاشات الرئيسية والتنقل
-import 'package:mhasbb/screens/home_screen.dart'; // HomeScreen سيكون الشاشة الرئيسية
+import 'package:mhasbb/screens/home_screen.dart';
 import 'package:mhasbb/screens/login_screen.dart';
-import 'package:mhasbb/screens/sales_invoices_screen.dart'; // شاشة فواتير البيع (مكتملة)
-import 'package:mhasbb/screens/add_edit_invoice_screen.dart'; // شاشة إضافة/تعديل فاتورة
-import 'package:mhasbb/screens/inventory_screen.dart'; // شاشة المخزون (مكتملة)
-import 'package:mhasbb/screens/purchase_invoices_screen.dart'; // شاشة فواتير الشراء (مكتملة)
+import 'package:mhasbb/screens/sales_invoices_screen.dart';
+import 'package:mhasbb/screens/add_edit_invoice_screen.dart';
+import 'package:mhasbb/screens/inventory_screen.dart';
+import 'package:mhasbb/screens/purchase_invoices_screen.dart';
+import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart';
+import 'package:mhasbb/screens/suppliers_screen.dart';
+import 'package:mhasbb/screens/add_edit_supplier_screen.dart';
 
-// استيراد موديلات Hive (تأكد من وجودها)
+// استيراد موديلات Hive
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/invoice.dart';
-// بما أن شاشة الموردين غير مكتملة، لن نستورد موديل Supplier هنا إذا لم يستخدم في مكان آخر بالـ main
+import 'package:mhasbb/models/supplier.dart';
 
 // ---
-// تعريف متغير SharedPreferences العام
 late SharedPreferences prefs;
 
-// شاشة مؤقتة لكل قسم (ستظل موجودة لغير المكتملة)
 class PlaceholderScreen extends StatelessWidget {
   final String title;
   const PlaceholderScreen({super.key, required this.title});
@@ -50,34 +51,29 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // تهيئة SharedPreferences
     prefs = await SharedPreferences.getInstance();
 
-    // تهيئة Hive باستخدام المسار الصحيح
     final appDocumentDir = await getApplicationDocumentsDirectory();
     Hive.init(appDocumentDir.path);
 
     // تسجيل جميع محولات (adapters) Hive لموديلات البيانات
-    // تأكد أن أرقام TypeId فريدة ولا تتكرر بين الموديلات!
-    Hive.registerAdapter(ItemAdapter());         // TypeId: 0
-    Hive.registerAdapter(CustomerAdapter());     // TypeId: 1
-    Hive.registerAdapter(InvoiceItemAdapter());  // TypeId: 2
-    Hive.registerAdapter(InvoiceTypeAdapter());  // TypeId: (موجود داخل InvoiceAdapter)
-    Hive.registerAdapter(InvoiceAdapter());      // TypeId: 3
-    // لا يتم تسجيل SupplierAdapter هنا، لأن موديل المورد غير مستخدم بشكل مباشر في Main
-    // إذا كنت تستخدم موديل Supplier في أي مكان آخر يتطلب تهيئته في Main، يجب عليك إضافته.
+    Hive.registerAdapter(ItemAdapter());
+    Hive.registerAdapter(CustomerAdapter());
+    Hive.registerAdapter(InvoiceItemAdapter());
+    // تم حذف: Hive.registerAdapter(InvoiceTypeAdapter()); // هذا السطر كان يسبب خطأ
+    Hive.registerAdapter(InvoiceAdapter());
+    Hive.registerAdapter(SupplierAdapter());
 
-    // فتح جميع صناديق Hive (Boxes) التي ستخزن البيانات
+    // فتح جميع صناديق Hive (Boxes)
     await Hive.openBox<Item>('items_box');
     await Hive.openBox<Customer>('customers_box');
     await Hive.openBox<Invoice>('invoices_box');
-    // لا يتم فتح صندوق suppliers_box هنا طالما شاشة الموردين ليست مكتملة
+    await Hive.openBox<Supplier>('suppliers_box');
 
     print('✅ App Initialization Complete: SharedPreferences, Hive, and Hive Boxes are ready.');
   } catch (e, stacktrace) {
     print('❌ Critical Error during App Initialization: $e');
     print('Stacktrace: $stacktrace');
-    // يمكنك عرض رسالة خطأ للمستخدم هنا أو تسجيلها في خدمة مراقبة الأخطاء
   }
 
   runApp(const MyApp());
@@ -97,7 +93,6 @@ class _MyAppState extends State<MyApp> {
       title: 'تطبيق إدارة المبيعات والمخزون',
       debugShowCheckedModeBanner: false,
 
-      // تحديد الثيم العام للتطبيق
       theme: ThemeData(
         primarySwatch: Colors.indigo,
         visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -155,7 +150,6 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
 
-      // تحديد الشاشة الأولية بناءً على حالة كلمة المرور
       home: FutureBuilder<bool>(
         future: _checkPasswordStatus(),
         builder: (context, snapshot) {
@@ -173,21 +167,21 @@ class _MyAppState extends State<MyApp> {
               ),
             );
           }
-          // بعد تسجيل الدخول، ننتقل إلى HomeScreen مباشرة
           return snapshot.data == true ? const HomeScreen() : const LoginScreen();
         },
       ),
 
-      // تعريف المسارات الرئيسية وإضافة مسارات الشاشات المكتملة
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
-        '/sales_invoices': (context) => const SalesInvoicesScreen(), // مكتملة
+        '/sales_invoices': (context) => const SalesInvoicesScreen(),
         '/add_edit_invoice': (context) => const AddEditInvoiceScreen(),
-        '/inventory': (context) => const InventoryScreen(), // مكتملة
-        '/purchase_invoices': (context) => const PurchaseInvoicesScreen(), // مكتملة
+        '/inventory': (context) => const InventoryScreen(),
+        '/purchase_invoices': (context) => const PurchaseInvoicesScreen(),
+        '/add_edit_purchase_invoice': (context) => const AddEditPurchaseInvoiceScreen(invoice: null), // تم التعديل
         '/customers': (context) => const PlaceholderScreen(title: 'العملاء'),
-        '/suppliers': (context) => const PlaceholderScreen(title: 'الموردين'), // الآن تشير إلى PlaceholderScreen
+        '/suppliers': (context) => const SuppliersScreen(),
+        '/add_edit_supplier': (context) => const AddEditSupplierScreen(),
         '/accounts': (context) => const PlaceholderScreen(title: 'كشف الحساب'),
         '/reports': (context) => const PlaceholderScreen(title: 'التقارير'),
         '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
@@ -196,7 +190,6 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  // دالة مساعدة للتحقق من حالة كلمة المرور باستخدام SharedPreferences
   Future<bool> _checkPasswordStatus() async {
     final storedPassword = prefs.getString('app_password');
     return storedPassword != null && storedPassword.isNotEmpty;
