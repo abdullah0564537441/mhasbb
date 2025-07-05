@@ -10,14 +10,16 @@ import 'package:mhasbb/screens/sales_invoices_screen.dart';
 import 'package:mhasbb/screens/add_edit_invoice_screen.dart';
 import 'package:mhasbb/screens/inventory_screen.dart';
 import 'package:mhasbb/screens/purchase_invoices_screen.dart';
-import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart'; // ⭐ تم استيراد شاشة إضافة/تعديل فاتورة الشراء
+import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart';
+import 'package:mhasbb/screens/suppliers_screen.dart';          // ⭐ تم استيراد شاشة الموردين
+import 'package:mhasbb/screens/add_edit_supplier_screen.dart'; // ⭐ تم استيراد شاشة إضافة/تعديل المورد
 
 // استيراد موديلات Hive
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/invoice.dart';
-import 'package:mhasbb/models/supplier.dart'; // ⭐ تم استيراد موديل المورد مرة أخرى
+import 'package:mhasbb/models/supplier.dart';
 
 // ---
 late SharedPreferences prefs;
@@ -27,7 +29,8 @@ class PlaceholderScreen extends StatelessWidget {
   const PlaceholderScreen({super.key, required this.title});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext
+      context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -55,18 +58,18 @@ void main() async {
     Hive.init(appDocumentDir.path);
 
     // تسجيل جميع محولات (adapters) Hive لموديلات البيانات
-    Hive.registerAdapter(ItemAdapter());         // TypeId: 0
-    Hive.registerAdapter(CustomerAdapter());     // TypeId: 1
-    Hive.registerAdapter(InvoiceItemAdapter());  // TypeId: 2
-    Hive.registerAdapter(InvoiceTypeAdapter());  // (موجود داخل InvoiceAdapter)
-    Hive.registerAdapter(InvoiceAdapter());      // TypeId: 3
-    Hive.registerAdapter(SupplierAdapter());     // ⭐ تم إعادة تسجيل محول المورد (TypeId: 4)
+    Hive.registerAdapter(ItemAdapter());
+    Hive.registerAdapter(CustomerAdapter());
+    Hive.registerAdapter(InvoiceItemAdapter());
+    Hive.registerAdapter(InvoiceTypeAdapter());
+    Hive.registerAdapter(InvoiceAdapter());
+    Hive.registerAdapter(SupplierAdapter());
 
     // فتح جميع صناديق Hive (Boxes)
     await Hive.openBox<Item>('items_box');
     await Hive.openBox<Customer>('customers_box');
     await Hive.openBox<Invoice>('invoices_box');
-    await Hive.openBox<Supplier>('suppliers_box'); // ⭐ تم إعادة فتح صندوق الموردين
+    await Hive.openBox<Supplier>('suppliers_box');
 
     print('✅ App Initialization Complete: SharedPreferences, Hive, and Hive Boxes are ready.');
   } catch (e, stacktrace) {
@@ -176,9 +179,10 @@ class _MyAppState extends State<MyApp> {
         '/add_edit_invoice': (context) => const AddEditInvoiceScreen(),
         '/inventory': (context) => const InventoryScreen(),
         '/purchase_invoices': (context) => const PurchaseInvoicesScreen(),
-        '/add_edit_purchase_invoice': (context) => const AddEditPurchaseInvoiceScreen(), // ⭐ تم إضافة هذا المسار
+        '/add_edit_purchase_invoice': (context) => const AddEditPurchaseInvoiceScreen(),
         '/customers': (context) => const PlaceholderScreen(title: 'العملاء'),
-        '/suppliers': (context) => const PlaceholderScreen(title: 'الموردين'),
+        '/suppliers': (context) => const SuppliersScreen(), // ⭐ تم تفعيل هذا المسار لشاشة الموردين
+        '/add_edit_supplier': (context) => const AddEditSupplierScreen(), // ⭐ تم إضافة هذا المسار لشاشة إضافة/تعديل المورد
         '/accounts': (context) => const PlaceholderScreen(title: 'كشف الحساب'),
         '/reports': (context) => const PlaceholderScreen(title: 'التقارير'),
         '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
