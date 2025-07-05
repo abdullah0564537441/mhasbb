@@ -1,53 +1,52 @@
 // lib/models/invoice.dart
 import 'package:hive/hive.dart';
-import 'package:mhasbb/models/invoice_item.dart';
-import 'package:mhasbb/models/customer.dart'; // سيبقى هذا الموديل إذا كنا ما زلنا نستخدمه
-import 'package:mhasbb/models/supplier.dart'; // ⭐ استيراد موديل المورد
+import 'package:mhasbb/models/invoice_item.dart'; // تأكد من استيراد InvoiceItem هنا
 
 part 'invoice.g.dart';
 
-// تعريف نوع الفاتورة
 enum InvoiceType {
   @HiveField(0)
-  sale, // فاتورة بيع
+  sale, // فاتورة مبيعات
   @HiveField(1)
-  purchase, // فاتورة شراء
+  purchase, // فاتورة مشتريات
 }
 
-@HiveType(typeId: 3) // تأكد أن الـ typeId هذا فريد (مثلاً 3 للفواتير)
+@HiveType(typeId: 3) // تأكد أن الـ typeId هذا فريد
 class Invoice extends HiveObject {
   @HiveField(0)
-  final String id; // معرف فريد للفاتورة
+  final String id; // معرف فريد للفاتورة، يفضل أن يكون ثابتًا بعد الإنشاء
 
   @HiveField(1)
   String invoiceNumber; // رقم الفاتورة
-  
+
   @HiveField(2)
-  String? customerName; // ⭐ اسم العميل (يمكن أن يكون null لفواتير الشراء)
-  
+  InvoiceType type; // نوع الفاتورة: بيع أو شراء
+
   @HiveField(3)
-  String? supplierName; // ⭐ اسم المورد (يمكن أن يكون null لفواتير البيع)
+  DateTime date; // تم إزالة final لتصبح قابلة للتعديل
 
   @HiveField(4)
-  DateTime invoiceDate; // تاريخ الفاتورة
-  
-  @HiveField(5)
-  List<InvoiceItem> items; // قائمة الأصناف في هذه الفاتورة
-  
-  @HiveField(6)
-  double totalAmount; // إجمالي مبلغ الفاتورة
+  List<InvoiceItem> items; // تم إزالة final لتصبح قابلة للتعديل
 
-  @HiveField(7) // ⭐ حقل جديد لتمييز نوع الفاتورة
-  InvoiceType type; 
+  @HiveField(5)
+  String? customerId; // تم إزالة final لتصبح قابلة للتعديل
+  @HiveField(6)
+  String? customerName; // تم إزالة final لتصبح قابلة للتعديل
+
+  @HiveField(7)
+  String? supplierId; // تم إزالة final لتصبح قابلة للتعديل
+  @HiveField(8)
+  String? supplierName; // تم إزالة final لتصبح قابلة للتعديل
 
   Invoice({
     required this.id,
     required this.invoiceNumber,
-    this.customerName, // يمكن أن يكون null
-    this.supplierName, // يمكن أن يكون null
-    required this.invoiceDate,
+    required this.type,
+    required this.date,
     required this.items,
-    required this.totalAmount,
-    this.type = InvoiceType.sale, // ⭐ القيمة الافتراضية هي بيع
+    this.customerId,
+    this.customerName,
+    this.supplierId,
+    this.supplierName,
   });
 }
