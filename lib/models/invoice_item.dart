@@ -20,11 +20,16 @@ class InvoiceItem extends HiveObject {
   @HiveField(4)
   double sellingPrice; // سعر البيع الفعلي وقت البيع (غير final للسماح بالتعديل)
 
+  @HiveField(5) // ⭐ جديد: إضافة حقل لسعر الشراء
+  double purchasePrice; // سعر الشراء الفعلي وقت الشراء (غير final للسماح بالتعديل)
+
+
   InvoiceItem({
     required this.itemId,
     required this.itemName,
     required this.quantity,
     required this.unit,
     required this.sellingPrice,
+    required this.purchasePrice, // ⭐ جديد: يجب أن يكون مطلوباً في الباني
   });
 }
