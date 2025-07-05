@@ -1,112 +1,13 @@
 // lib/screens/add_edit_purchase_invoice_screen.dart
-import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:uuid/uuid.dart';
-import 'package:intl/intl.dart';
 
-import 'package:mhasbb/models/invoice.dart';
-import 'package:mhasbb/models/invoice_item.dart';
-import 'package:mhasbb/models/item.dart';
-import 'package:mhasbb/models/supplier.dart'; // استيراد موديل المورد
-
-class AddEditPurchaseInvoiceScreen extends StatefulWidget {
-  final Invoice? invoice;
-
-  const AddEditPurchaseInvoiceScreen({super.key, this.invoice});
-
-  @override
-  State<AddEditPurchaseInvoiceScreen> createState() => _AddEditPurchaseInvoiceScreenState();
-}
+// ... (الكود العلوي لم يتغير)
 
 class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final Uuid uuid = const Uuid();
+  // ... (المتغيرات و initState لم تتغير)
 
-  late TextEditingController _invoiceNumberController;
-  late TextEditingController _dateController;
-  Supplier? _selectedSupplier; // استخدام موديل المورد
-  final List<InvoiceItem> _invoiceItems = []; // قائمة الأصناف في الفاتورة
-
-  late Box<Invoice> invoicesBox;
-  late Box<Item> itemsBox;
-  late Box<Supplier> suppliersBox; // صندوق الموردين
-
-  DateTime _selectedDate = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    invoicesBox = Hive.box<Invoice>('invoices_box');
-    itemsBox = Hive.box<Item>('items_box');
-    suppliersBox = Hive.box<Supplier>('suppliers_box'); // تهيئة صندوق الموردين
-
-    if (widget.invoice == null) {
-      // فاتورة شراء جديدة
-      _invoiceNumberController = TextEditingController(text: _generateNextInvoiceNumber());
-      _selectedDate = DateTime.now();
-      _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_selectedDate));
-    } else {
-      // تعديل فاتورة شراء موجودة
-      _invoiceNumberController = TextEditingController(text: widget.invoice!.invoiceNumber);
-      _selectedDate = widget.invoice!.date;
-      _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_selectedDate));
-      _invoiceItems.addAll(List<InvoiceItem>.from(widget.invoice!.items));
-      if (widget.invoice!.supplierId != null) {
-        _selectedSupplier = suppliersBox.get(widget.invoice!.supplierId);
-      }
-    }
-  }
-
-  String _generateNextInvoiceNumber() {
-    final allInvoices = invoicesBox.values.toList();
-    final purchaseInvoices = allInvoices.where((inv) => inv.type == InvoiceType.purchase).toList();
-    if (purchaseInvoices.isEmpty) {
-      return 'PO-0001'; // رقم فاتورة شراء افتراضي
-    }
-    // البحث عن أعلى رقم فاتورة شراء حالي
-    int maxNumber = 0;
-    for (var invoice in purchaseInvoices) {
-      if (invoice.invoiceNumber.startsWith('PO-')) {
-        try {
-          int currentNumber = int.parse(invoice.invoiceNumber.substring(3));
-          if (currentNumber > maxNumber) {
-            maxNumber = currentNumber;
-          }
-        } catch (e) {
-          // تجاهل الأخطاء إذا كان التنسيق غير صحيح
-        }
-      }
-    }
-    return 'PO-${(maxNumber + 1).toString().padLeft(4, '0')}';
-  }
-
-  @override
-  void dispose() {
-    _invoiceNumberController.dispose();
-    _dateController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
-      });
-    }
-  }
-
-  // ⭐ هنا التعديل لإضافة البحث الذكي
   void _addInvoiceItem() {
     Item? selectedItemObject;
     double tempQuantity = 1.0;
-    // ⭐ جديد: TextEditingController لحقل سعر الشراء
     final TextEditingController _purchasePriceController = TextEditingController();
 
     final _itemFormKey = GlobalKey<FormState>();
@@ -119,7 +20,6 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
           title: const Text('إضافة صنف لفاتورة الشراء'),
           content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
-              // ⭐ تحديث سعر الشراء في المتحكم عند كل إعادة بناء (لضمان تحديث initialValue)
               if (selectedItemObject != null && _purchasePriceController.text.isEmpty) {
                 _purchasePriceController.text = selectedItemObject!.purchasePrice.toStringAsFixed(2);
               }
@@ -130,7 +30,6 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // ⭐ Autocomplete لوظيفة البحث الذكي
                       Autocomplete<Item>(
                         displayStringForOption: (Item option) => option.name,
                         optionsBuilder: (TextEditingValue textEditingValue) {
@@ -145,9 +44,8 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                           setState(() {
                             selectedItemObject = selection;
                             _itemSearchController.text = selection.name;
-                            // ⭐ تحديث قيمة المتحكم الخاص بسعر الشراء هنا
                             _purchasePriceController.text = selection.purchasePrice.toStringAsFixed(2);
-                            tempQuantity = 1.0; // إعادة تعيين الكمية لـ 1 عند اختيار صنف جديد
+                            tempQuantity = 1.0;
                           });
                         },
                         fieldViewBuilder: (BuildContext context,
@@ -220,7 +118,6 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
-                        // ⭐ ربط حقل السعر بالـ TextEditingController
                         controller: _purchasePriceController,
                         decoration: InputDecoration(
                           labelText: 'سعر الشراء',
@@ -228,14 +125,8 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                         ),
                         keyboardType: TextInputType.number,
                         onChanged: (value) {
-                          // يمكن للمستخدم تعديل السعر يدويًا بعد الجلب التلقائي
-                          // لذا، نحدث القيمة المؤقتة مباشرة من المتحكم
-                          // (لا نحتاج لـ copyWith هنا لأنه ليس عنصر الـ item الأصلي)
-                          // if (selectedItemObject != null) {
-                          //   selectedItemObject = selectedItemObject!.copyWith(
-                          //     purchasePrice: double.tryParse(value) ?? 0.0,
-                          //   );
-                          // }
+                          // هذا السطر لم يعد يسبب مشكلة بعد إضافة purchasePrice لـ InvoiceItem
+                          // وقمنا بحذف التعليق الذي كان يسبب خطأ copyWith في هذا المكان.
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! < 0) {
@@ -255,7 +146,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
               child: const Text('إلغاء'),
               onPressed: () {
                 Navigator.of(context).pop();
-                _purchasePriceController.dispose(); // ⭐ التخلص من المتحكم عند إغلاق الـ Dialog
+                _purchasePriceController.dispose();
               },
             ),
             ElevatedButton(
@@ -268,15 +159,15 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                       itemId: selectedItemObject!.id,
                       itemName: selectedItemObject!.name,
                       quantity: tempQuantity,
-                      purchasePrice: double.tryParse(_purchasePriceController.text) ?? 0.0, // ⭐ جلب القيمة النهائية من المتحكم
-                      sellingPrice: selectedItemObject!.sellingPrice, // سعر البيع يبقى من الصنف الأصلي
+                      sellingPrice: selectedItemObject!.sellingPrice, // سعر البيع من الصنف الأصلي
+                      purchasePrice: double.tryParse(_purchasePriceController.text) ?? 0.0, // ⭐ تصحيح: الآن `purchasePrice` موجود في `InvoiceItem`
                       unit: selectedItemObject!.unit,
                     );
                     setState(() {
                       _invoiceItems.add(newItem);
                     });
                     Navigator.of(context).pop();
-                    _purchasePriceController.dispose(); // ⭐ التخلص من المتحكم عند إغلاق الـ Dialog
+                    _purchasePriceController.dispose();
                   }
                 }
               },
@@ -297,72 +188,12 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
   double _calculateTotal() {
     double total = 0.0;
     for (var item in _invoiceItems) {
-      // ⭐ استخدام purchasePrice لحساب الإجمالي في فاتورة الشراء
-      total += item.quantity * item.purchasePrice;
+      total += item.quantity * item.purchasePrice; // ⭐ تصحيح: الآن `purchasePrice` موجود
     }
     return total;
   }
 
-  Future<void> _saveInvoice() async {
-    if (_formKey.currentState!.validate()) {
-      if (_invoiceItems.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('الرجاء إضافة صنف واحد على الأقل للفاتورة.')),
-        );
-        return;
-      }
-
-      _formKey.currentState!.save();
-
-      final String invoiceNumber = _invoiceNumberController.text.trim();
-      final String? supplierId = _selectedSupplier?.id;
-      final String? supplierName = _selectedSupplier?.name;
-
-      try {
-        if (widget.invoice == null) {
-          // إضافة فاتورة شراء جديدة
-          final newInvoice = Invoice(
-            id: uuid.v4(),
-            invoiceNumber: invoiceNumber,
-            type: InvoiceType.purchase, // نوع الفاتورة: شراء
-            date: _selectedDate,
-            items: _invoiceItems.toList(),
-            supplierId: supplierId,
-            supplierName: supplierName,
-            customerId: null,
-            customerName: null,
-          );
-          await invoicesBox.put(newInvoice.id, newInvoice);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم إضافة فاتورة الشراء بنجاح!')),
-          );
-        } else {
-          // تحديث فاتورة شراء موجودة
-          final existingInvoice = widget.invoice!;
-          existingInvoice.invoiceNumber = invoiceNumber;
-          existingInvoice.date = _selectedDate;
-          existingInvoice.items = _invoiceItems.toList();
-          existingInvoice.supplierId = supplierId;
-          existingInvoice.supplierName = supplierName;
-
-          await existingInvoice.save();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم تحديث فاتورة الشراء بنجاح!')),
-          );
-        }
-        Navigator.of(context).pop();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ أثناء حفظ الفاتورة: $e')),
-        );
-        debugPrint('Hive Save Error: $e');
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إكمال جميع الحقول المطلوبة بشكل صحيح.')),
-      );
-    }
-  }
+  // ... (باقي كود _saveInvoice لم يتغير)
 
   @override
   Widget build(BuildContext context) {
@@ -467,7 +298,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                         itemCount: currentItems.length,
                         itemBuilder: (context, index) {
                           final item = currentItems[index];
-                          final itemTotal = item.quantity * item.purchasePrice; // ⭐ استخدام purchasePrice
+                          final itemTotal = item.quantity * item.purchasePrice; // ⭐ تصحيح: الآن `purchasePrice` موجود
                           final numberFormat = NumberFormat('#,##0.00', 'en_US');
 
                           return Card(
@@ -475,7 +306,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                             child: ListTile(
                               title: Text(item.itemName),
                               subtitle: Text(
-                                'الكمية: ${item.quantity} ${item.unit} x السعر: ${numberFormat.format(item.purchasePrice)} = الإجمالي: ${numberFormat.format(itemTotal)}', // ⭐ استخدام purchasePrice
+                                'الكمية: ${item.quantity} ${item.unit} x السعر: ${numberFormat.format(item.purchasePrice)} = الإجمالي: ${numberFormat.format(itemTotal)}', // ⭐ تصحيح: الآن `purchasePrice` موجود
                               ),
                               trailing: IconButton(
                                 icon: const Icon(Icons.delete, color: Colors.red),
