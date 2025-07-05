@@ -8,7 +8,8 @@ import 'package:mhasbb/screens/sales_invoices_screen.dart';
 import 'package:mhasbb/screens/inventory_screen.dart';
 import 'package:mhasbb/screens/purchase_invoices_screen.dart';
 import 'package:mhasbb/screens/suppliers_screen.dart';
-import 'package:mhasbb/screens/customers_screen.dart'; // ⭐⭐ أضف هذا السطر لاستيراد شاشة العملاء
+import 'package:mhasbb/screens/customers_screen.dart';
+import 'package:mhasbb/screens/account_statement_screen.dart'; // ⭐⭐ تم إضافة استيراد شاشة كشف الحساب
 import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen
 
 class HomeScreen extends StatelessWidget {
@@ -37,10 +38,12 @@ class HomeScreen extends StatelessWidget {
       case 'الموردين':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const SuppliersScreen()));
         break;
-      case 'العملاء': // ⭐⭐ أضف هذه الحالة لتوجيه زر العملاء
+      case 'العملاء':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const CustomersScreen()));
         break;
-      case 'كشف الحساب':
+      case 'كشف الحساب': // ⭐⭐ تم إضافة توجيه شاشة كشف الحساب
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const AccountStatementScreen()));
+        break;
       case 'التقارير':
       case 'الضريبة':
       case 'الإعدادات':
@@ -77,7 +80,7 @@ class HomeScreen extends StatelessWidget {
             _buildSectionCard(context, 'المخزون', Icons.inventory_2, Colors.teal),
             _buildSectionCard(context, 'العملاء', Icons.people, Colors.orange),
             _buildSectionCard(context, 'الموردين', Icons.local_shipping, Colors.purple),
-            _buildSectionCard(context, 'كشف الحساب', Icons.account_balance_wallet, Colors.redAccent),
+            _buildSectionCard(context, 'كشف الحساب', Icons.account_balance_wallet, Colors.redAccent), // ⭐⭐ تأكد من وجود هذه البطاقة
             _buildSectionCard(context, 'التقارير', Icons.bar_chart, Colors.brown),
             _buildSectionCard(context, 'الضريبة', Icons.calculate, Colors.lime),
             _buildSectionCard(context, 'الإعدادات', Icons.settings, Colors.grey),
