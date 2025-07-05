@@ -1,199 +1,7 @@
 // lib/screens/add_edit_purchase_invoice_screen.dart
+// تأكد أن جميع الـ imports في بداية الملف موجودة بشكل صحيح
 
-// ... (الكود العلوي لم يتغير)
-
-class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScreen> {
-  // ... (المتغيرات و initState لم تتغير)
-
-  void _addInvoiceItem() {
-    Item? selectedItemObject;
-    double tempQuantity = 1.0;
-    final TextEditingController _purchasePriceController = TextEditingController();
-
-    final _itemFormKey = GlobalKey<FormState>();
-    final TextEditingController _itemSearchController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('إضافة صنف لفاتورة الشراء'),
-          content: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              if (selectedItemObject != null && _purchasePriceController.text.isEmpty) {
-                _purchasePriceController.text = selectedItemObject!.purchasePrice.toStringAsFixed(2);
-              }
-
-              return Form(
-                key: _itemFormKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Autocomplete<Item>(
-                        displayStringForOption: (Item option) => option.name,
-                        optionsBuilder: (TextEditingValue textEditingValue) {
-                          if (textEditingValue.text.isEmpty) {
-                            return const Iterable<Item>.empty();
-                          }
-                          return itemsBox.values.where((item) {
-                            return item.name.toLowerCase().contains(textEditingValue.text.toLowerCase());
-                          });
-                        },
-                        onSelected: (Item selection) {
-                          setState(() {
-                            selectedItemObject = selection;
-                            _itemSearchController.text = selection.name;
-                            _purchasePriceController.text = selection.purchasePrice.toStringAsFixed(2);
-                            tempQuantity = 1.0;
-                          });
-                        },
-                        fieldViewBuilder: (BuildContext context,
-                            TextEditingController fieldTextEditingController,
-                            FocusNode fieldFocusNode,
-                            VoidCallback onFieldSubmitted) {
-                          _itemSearchController.text = fieldTextEditingController.text;
-                          return TextFormField(
-                            controller: fieldTextEditingController,
-                            focusNode: fieldFocusNode,
-                            decoration: InputDecoration(
-                              labelText: 'البحث عن صنف',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty || selectedItemObject == null || selectedItemObject!.name.toLowerCase() != value.toLowerCase()) {
-                                return 'الرجاء اختيار صنف موجود من القائمة';
-                              }
-                              return null;
-                            },
-                          );
-                        },
-                        optionsViewBuilder: (BuildContext context,
-                            AutocompleteOnSelected<Item> onSelected,
-                            Iterable<Item> options) {
-                          return Align(
-                            alignment: Alignment.topLeft,
-                            child: Material(
-                              elevation: 4.0,
-                              child: SizedBox(
-                                height: 200.0,
-                                child: ListView.builder(
-                                  padding: EdgeInsets.zero,
-                                  itemCount: options.length,
-                                  itemBuilder: (BuildContext context, int index) {
-                                    final Item option = options.elementAt(index);
-                                    return GestureDetector(
-                                      onTap: () {
-                                        onSelected(option);
-                                      },
-                                      child: ListTile(
-                                        title: Text(option.name),
-                                        subtitle: Text('سعر الشراء: ${option.purchasePrice.toStringAsFixed(2)}'),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: 'الكمية',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        keyboardType: TextInputType.number,
-                        initialValue: tempQuantity.toString(),
-                        onChanged: (value) {
-                          tempQuantity = double.tryParse(value) ?? 1.0;
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! <= 0) {
-                            return 'الرجاء إدخال كمية صحيحة أكبر من 0';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _purchasePriceController,
-                        decoration: InputDecoration(
-                          labelText: 'سعر الشراء',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) {
-                          // هذا السطر لم يعد يسبب مشكلة بعد إضافة purchasePrice لـ InvoiceItem
-                          // وقمنا بحذف التعليق الذي كان يسبب خطأ copyWith في هذا المكان.
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! < 0) {
-                            return 'الرجاء إدخال سعر صحيح';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('إلغاء'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _purchasePriceController.dispose();
-              },
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_itemFormKey.currentState!.validate()) {
-                  _itemFormKey.currentState!.save();
-
-                  if (selectedItemObject != null) {
-                    final newItem = InvoiceItem(
-                      itemId: selectedItemObject!.id,
-                      itemName: selectedItemObject!.name,
-                      quantity: tempQuantity,
-                      sellingPrice: selectedItemObject!.sellingPrice, // سعر البيع من الصنف الأصلي
-                      purchasePrice: double.tryParse(_purchasePriceController.text) ?? 0.0, // ⭐ تصحيح: الآن `purchasePrice` موجود في `InvoiceItem`
-                      unit: selectedItemObject!.unit,
-                    );
-                    setState(() {
-                      _invoiceItems.add(newItem);
-                    });
-                    Navigator.of(context).pop();
-                    _purchasePriceController.dispose();
-                  }
-                }
-              },
-              child: const Text('إضافة'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _removeInvoiceItem(int index) {
-    setState(() {
-      _invoiceItems.removeAt(index);
-    });
-  }
-
-  double _calculateTotal() {
-    double total = 0.0;
-    for (var item in _invoiceItems) {
-      total += item.quantity * item.purchasePrice; // ⭐ تصحيح: الآن `purchasePrice` موجود
-    }
-    return total;
-  }
-
-  // ... (باقي كود _saveInvoice لم يتغير)
+// ... (الكود العلوي لم يتغير، بما في ذلك _addInvoiceItem و _removeInvoiceItem و _calculateTotal)
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +106,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                         itemCount: currentItems.length,
                         itemBuilder: (context, index) {
                           final item = currentItems[index];
-                          final itemTotal = item.quantity * item.purchasePrice; // ⭐ تصحيح: الآن `purchasePrice` موجود
+                          final itemTotal = item.quantity * item.purchasePrice;
                           final numberFormat = NumberFormat('#,##0.00', 'en_US');
 
                           return Card(
@@ -306,7 +114,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                             child: ListTile(
                               title: Text(item.itemName),
                               subtitle: Text(
-                                'الكمية: ${item.quantity} ${item.unit} x السعر: ${numberFormat.format(item.purchasePrice)} = الإجمالي: ${numberFormat.format(itemTotal)}', // ⭐ تصحيح: الآن `purchasePrice` موجود
+                                'الكمية: ${item.quantity} ${item.unit} x السعر: ${numberFormat.format(item.purchasePrice)} = الإجمالي: ${numberFormat.format(itemTotal)}',
                               ),
                               trailing: IconButton(
                                 icon: const Icon(Icons.delete, color: Colors.red),
@@ -327,6 +135,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                 ],
               ),
             ),
+            // هذا هو الجزء الذي يسبب المشكلة إذا كان خارج دالة build
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: ElevatedButton(
@@ -345,4 +154,4 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
       ),
     );
   }
-}
+} // تأكد أن هذا القوس يغلق كلاس _AddEditPurchaseInvoiceScreenState
