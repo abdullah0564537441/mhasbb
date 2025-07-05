@@ -1,9 +1,9 @@
-// lib/screens/purchase_invoices_screen.dart
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
-import 'package:mhasbb/models/invoice.dart'; // استيراد موديل الفاتورة
-import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart'; // سنقوم بإنشاء هذه الشاشة قريباً
+import 'package:intl/intl.dart'; // لتنسيق التاريخ والأرقام
+import 'package:mhasbb/models/invoice.dart';
+import 'package:mhasbb/models/invoice_item.dart'; // للتأكد من استيراد InvoiceItem
+import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart'; // استيراد شاشة إضافة/تعديل فاتورة الشراء
 
 class PurchaseInvoicesScreen extends StatefulWidget {
   const PurchaseInvoicesScreen({super.key});
@@ -21,7 +21,16 @@ class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
     invoicesBox = Hive.box<Invoice>('invoices_box');
   }
 
-  // دالة لحذف فاتورة شراء
+  // دالة لحساب الإجمالي الكلي للفاتورة
+  double _calculateInvoiceTotal(Invoice invoice) {
+    double total = 0.0;
+    for (var item in invoice.items) {
+      total += item.quantity * item.price;
+    }
+    return total;
+  }
+
+  // دالة لتأكيد وحذف الفاتورة
   void _confirmAndDeleteInvoice(BuildContext context, Invoice invoice) {
     showDialog(
       context: context,
@@ -40,11 +49,9 @@ class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: const Text('حذف', style: TextStyle(color: Colors.white)),
               onPressed: () async {
-                // ⭐ هنا يمكنك إضافة منطق إعادة الكميات إلى المخزون إذا تم حذف فاتورة شراء
-                // حالياً، سنحذفها مباشرة للتبسيط
-                await invoice.delete();
+                await invoice.delete(); // حذف الفاتورة من Hive
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم حذف فاتورة الشراء بنجاح!')),
+                  const SnackBar(content: Text('تم حذف الفاتورة بنجاح!')),
                 );
                 Navigator.of(context).pop();
               },
@@ -53,11 +60,6 @@ class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
         );
       },
     );
-  }
-
-  // دالة لتنسيق التاريخ
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -70,13 +72,15 @@ class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
       body: ValueListenableBuilder<Box<Invoice>>(
         valueListenable: invoicesBox.listenable(),
         builder: (context, box, _) {
-          // تصفية الفواتير لعرض فواتير الشراء فقط
-          final purchaseInvoices = box.values.where((invoice) => invoice.type == InvoiceType.purchase).toList();
+          final purchaseInvoices = box.values
+              .where((invoice) => invoice.type == InvoiceType.purchase)
+              .toList()
+              .cast<Invoice>();
 
           if (purchaseInvoices.isEmpty) {
             return const Center(
               child: Text(
-                'لا توجد فواتير شراء حتى الآن.\nاضغط على "+" لإضافة فاتورة جديدة.',
+                'لا توجد فواتير شراء حتى الآن.\nاضغط على "+" لإضافة فاتورة شراء جديدة.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 18, color: Colors.grey),
               ),
@@ -88,24 +92,31 @@ class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
             itemCount: purchaseInvoices.length,
             itemBuilder: (context, index) {
               final invoice = purchaseInvoices[index];
+              final total = _calculateInvoiceTotal(invoice);
+              final dateFormat = DateFormat('yyyy-MM-dd'); // تنسيق التاريخ
+              final numberFormat = NumberFormat('#,##0.00', 'en_US'); // تنسيق الأرقام
+
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
                 elevation: 4,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  leading: const Icon(Icons.shopping_bag, size: 40, color: Colors.green),
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                    child: Icon(Icons.shopping_cart, color: Theme.of(context).primaryColor),
+                  ),
                   title: Text(
-                    'فاتورة شراء رقم: ${invoice.invoiceNumber}',
+                    'فاتورة رقم: ${invoice.invoiceNumber}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('المورد: ${invoice.supplierName ?? 'غير محدد'}', style: TextStyle(color: Colors.grey[700])),
-                      Text('التاريخ: ${_formatDate(invoice.invoiceDate)}', style: TextStyle(color: Colors.grey[700])),
-                      Text('الإجمالي: ${invoice.totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      // يمكنك عرض قائمة الأصناف هنا أو في شاشة تفاصيل الفاتورة
+                      Text('التاريخ: ${dateFormat.format(invoice.date)}'),
+                      if (invoice.supplierName != null && invoice.supplierName!.isNotEmpty)
+                        Text('المورد: ${invoice.supplierName}'),
+                      Text('الإجمالي: ${numberFormat.format(total)}'),
                     ],
                   ),
                   trailing: Row(
@@ -114,7 +125,7 @@ class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
                         onPressed: () {
-                          // سيتم التنقل لشاشة التعديل عندما ننشئها
+                          // التنقل لشاشة التعديل مع تمرير الفاتورة الحالية
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -143,7 +154,7 @@ class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
           // التنقل لإضافة فاتورة شراء جديدة
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddEditPurchaseInvoiceScreen()),
+            MaterialPageRoute(builder: (context) => const AddEditPurchaseInvoiceScreen(invoice: null)), // تم التعديل
           );
         },
         child: const Icon(Icons.add),
