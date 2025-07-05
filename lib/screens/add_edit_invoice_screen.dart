@@ -2,12 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
-import 'package:intl/intl.dart'; // تأكد من وجود هذه المكتبة
+import 'package:intl/intl.dart';
 
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/item.dart';
-import 'package:mhasbb/models/customer.dart'; // تأكد من هذا الـ import للعملاء
+import 'package:mhasbb/models/customer.dart';
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐ تم إضافة هذا السطر
 
 class AddEditInvoiceScreen extends StatefulWidget {
   final Invoice? invoice;
@@ -24,12 +25,12 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
 
   late TextEditingController _invoiceNumberController;
   late TextEditingController _dateController;
-  Customer? _selectedCustomer; // هذا للعميل، ليس المورد
+  Customer? _selectedCustomer;
   final List<InvoiceItem> _invoiceItems = [];
 
   late Box<Invoice> invoicesBox;
   late Box<Item> itemsBox;
-  late Box<Customer> customersBox; // هذا خاص بصندوق العملاء
+  late Box<Customer> customersBox;
 
   DateTime _selectedDate = DateTime.now();
 
@@ -38,7 +39,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
     super.initState();
     invoicesBox = Hive.box<Invoice>('invoices_box');
     itemsBox = Hive.box<Item>('items_box');
-    customersBox = Hive.box<Customer>('customers_box'); // تهيئة صندوق العملاء
+    customersBox = Hive.box<Customer>('customers_box');
 
     if (widget.invoice == null) {
       _invoiceNumberController = TextEditingController(text: _generateNextInvoiceNumber());
@@ -57,7 +58,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
 
   String _generateNextInvoiceNumber() {
     final allInvoices = invoicesBox.values.toList();
-    final salesInvoices = allInvoices.where((inv) => inv.type == InvoiceType.sale).toList();
+    final salesInvoices = allInvoices.where((inv) => inv.type == InvoiceType.sale).toList(); // ⭐ استخدام InvoiceType.sale
     if (salesInvoices.isEmpty) {
       return 'SO-0001';
     }
@@ -102,7 +103,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
   void _addInvoiceItem() {
     Item? selectedItemObject;
     double tempQuantity = 1.0;
-    final TextEditingController _sellingPriceController = TextEditingController(); // هذا سعر البيع
+    final TextEditingController _sellingPriceController = TextEditingController();
 
     final _itemFormKey = GlobalKey<FormState>();
     final TextEditingController _itemSearchController = TextEditingController();
@@ -214,7 +215,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                       TextFormField(
                         controller: _sellingPriceController,
                         decoration: InputDecoration(
-                          labelText: 'سعر البيع', // تأكد أنه سعر البيع هنا
+                          labelText: 'سعر البيع',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         keyboardType: TextInputType.number,
@@ -249,8 +250,8 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                       itemId: selectedItemObject!.id,
                       itemName: selectedItemObject!.name,
                       quantity: tempQuantity,
-                      sellingPrice: double.tryParse(_sellingPriceController.text) ?? 0.0, // هنا سعر البيع
-                      purchasePrice: selectedItemObject!.purchasePrice, // هذا من الصنف الأصلي
+                      sellingPrice: double.tryParse(_sellingPriceController.text) ?? 0.0,
+                      purchasePrice: selectedItemObject!.purchasePrice,
                       unit: selectedItemObject!.unit,
                     );
                     setState(() {
@@ -278,7 +279,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
   double _calculateTotal() {
     double total = 0.0;
     for (var item in _invoiceItems) {
-      total += item.quantity * item.sellingPrice; // هنا نستخدم سعر البيع للحسابات
+      total += item.quantity * item.sellingPrice;
     }
     return total;
   }
@@ -303,7 +304,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
           final newInvoice = Invoice(
             id: uuid.v4(),
             invoiceNumber: invoiceNumber,
-            type: InvoiceType.sale, // هذا النوع هو sale (بيع)
+            type: InvoiceType.sale, // ⭐ استخدام InvoiceType.sale
             date: _selectedDate,
             items: _invoiceItems.toList(),
             customerId: customerId,
@@ -387,13 +388,13 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                     onTap: () => _selectDate(context),
                   ),
                   const SizedBox(height: 16),
-                  ValueListenableBuilder<Box<Customer>>( // هنا نستخدم Customers
+                  ValueListenableBuilder<Box<Customer>>(
                     valueListenable: customersBox.listenable(),
                     builder: (context, box, _) {
                       final customers = box.values.toList().cast<Customer>();
                       return DropdownButtonFormField<Customer>(
                         decoration: InputDecoration(
-                          labelText: 'العميل (اختياري)', // للعميل
+                          labelText: 'العميل (اختياري)',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                           prefixIcon: const Icon(Icons.person),
                         ),
@@ -445,7 +446,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                         itemCount: currentItems.length,
                         itemBuilder: (context, index) {
                           final item = currentItems[index];
-                          final itemTotal = item.quantity * item.sellingPrice; // هنا سعر البيع
+                          final itemTotal = item.quantity * item.sellingPrice;
                           final numberFormat = NumberFormat('#,##0.00', 'en_US');
 
                           return Card(
@@ -453,7 +454,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                             child: ListTile(
                               title: Text(item.itemName),
                               subtitle: Text(
-                                'الكمية: ${item.quantity} ${item.unit} x السعر: ${numberFormat.format(item.sellingPrice)} = الإجمالي: ${numberFormat.format(itemTotal)}', // هنا سعر البيع
+                                'الكمية: ${item.quantity} ${item.unit} x السعر: ${numberFormat.format(item.sellingPrice)} = الإجمالي: ${numberFormat.format(itemTotal)}',
                               ),
                               trailing: IconButton(
                                 icon: const Icon(Icons.delete, color: Colors.red),
