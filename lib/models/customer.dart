@@ -5,7 +5,7 @@ part 'customer.g.dart';
 
 // ⭐⭐ هام: تأكد أن typeId هذا فريد ولم تستخدمه لأي كلاس أو enum آخر
 // استخدم رقمًا لم يتم استخدامه مسبقًا
-@HiveType(typeId: 6) // تأكد من أن هذا الرقم فريد!
+@HiveType(typeId: 1) // تأكد من أن هذا الرقم فريد!
 class Customer extends HiveObject {
   @HiveField(0)
   final String id; // معرف فريد للعميل (أصبح final)
