@@ -14,6 +14,7 @@ import 'package:mhasbb/screens/purchase_invoices_screen.dart';
 import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart';
 import 'package:mhasbb/screens/suppliers_screen.dart';
 import 'package:mhasbb/screens/add_edit_supplier_screen.dart';
+import 'package:mhasbb/screens/customers_screen.dart'; // ⭐⭐ تأكد من استيراد شاشة العملاء هنا
 
 // استيراد موديلات Hive (فقط الملفات الأساسية، وليس ملفات الـ g.dart)
 import 'package:mhasbb/models/item.dart';
@@ -21,7 +22,7 @@ import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/supplier.dart';
-import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ تأكد من استيراد هذا الملف الأساسي لـ InvoiceType
+import 'package:mhasbb/models/invoice_type.dart';
 
 // ---
 late SharedPreferences prefs;
@@ -59,8 +60,6 @@ void main() async {
     Hive.init(appDocumentDir.path);
 
     // تسجيل جميع محولات (adapters) Hive لموديلات البيانات
-    // بما أننا استوردنا الملفات الأساسية للموديلات، فإن الـ Adapters
-    // ستكون متاحة بشكل تلقائي لأنها جزء من تلك الملفات.
     Hive.registerAdapter(InvoiceTypeAdapter());
     Hive.registerAdapter(ItemAdapter());
     Hive.registerAdapter(CustomerAdapter());
@@ -184,7 +183,7 @@ class _MyAppState extends State<MyApp> {
         '/inventory': (context) => const InventoryScreen(),
         '/purchase_invoices': (context) => const PurchaseInvoicesScreen(),
         '/add_edit_purchase_invoice': (context) => const AddEditPurchaseInvoiceScreen(invoice: null),
-        '/customers': (context) => const PlaceholderScreen(title: 'العملاء'),
+        '/customers': (context) => const CustomersScreen(), // ⭐⭐ تم التعديل هنا لتوجيه شاشة العملاء
         '/suppliers': (context) => const SuppliersScreen(),
         '/add_edit_supplier': (context) => const AddEditSupplierScreen(),
         '/accounts': (context) => const PlaceholderScreen(title: 'كشف الحساب'),
