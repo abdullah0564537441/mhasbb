@@ -1,198 +1,424 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart'; // لتنسيق التاريخ والأرقام
 
-// استيراد الشاشات الرئيسية والتنقل
-import 'package:mhasbb/screens/home_screen.dart';
-import 'package:mhasbb/screens/login_screen.dart';
-import 'package:mhasbb/screens/sales_invoices_screen.dart';
-import 'package:mhasbb/screens/add_edit_invoice_screen.dart';
-import 'package:mhasbb/screens/inventory_screen.dart';
-import 'package:mhasbb/screens/purchase_invoices_screen.dart';
-import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart';
-import 'package:mhasbb/screens/suppliers_screen.dart';          // ⭐ تم استيراد شاشة الموردين
-import 'package:mhasbb/screens/add_edit_supplier_screen.dart'; // ⭐ تم استيراد شاشة إضافة/تعديل المورد
-
-// استيراد موديلات Hive
-import 'package:mhasbb/models/item.dart';
-import 'package:mhasbb/models/customer.dart';
-import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/invoice.dart';
-import 'package:mhasbb/models/supplier.dart';
+import 'package:mhasbb/models/invoice_item.dart';
+import 'package:mhasbb/models/item.dart';
+import 'package:mhasbb/models/supplier.dart'; // استيراد موديل المورد
 
-// ---
-late SharedPreferences prefs;
+class AddEditPurchaseInvoiceScreen extends StatefulWidget {
+  final Invoice? invoice; // فاتورة الشراء التي سيتم تعديلها (يمكن أن تكون null للإضافة)
 
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const PlaceholderScreen({super.key, required this.title});
+  const AddEditPurchaseInvoiceScreen({super.key, this.invoice});
 
   @override
-  Widget build(BuildContext
-      context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Text(
-          'هذه شاشة $title',
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey),
-          textAlign: TextAlign.center,
-        ),
-      ),
+  State<AddEditPurchaseInvoiceScreen> createState() => _AddEditPurchaseInvoiceScreenState();
+}
+
+class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final Uuid uuid = const Uuid();
+
+  late TextEditingController _invoiceNumberController;
+  late TextEditingController _dateController;
+  Supplier? _selectedSupplier;
+  final List<InvoiceItem> _invoiceItems = [];
+
+  late Box<Invoice> invoicesBox;
+  late Box<Item> itemsBox;
+  late Box<Supplier> suppliersBox; // صندوق الموردين
+
+  DateTime _selectedDate = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    invoicesBox = Hive.box<Invoice>('invoices_box');
+    itemsBox = Hive.box<Item>('items_box');
+    suppliersBox = Hive.box<Supplier>('suppliers_box'); // تهيئة صندوق الموردين
+
+    if (widget.invoice == null) {
+      // فاتورة جديدة
+      _invoiceNumberController = TextEditingController(text: _generateNextInvoiceNumber());
+      _selectedDate = DateTime.now();
+      _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_selectedDate));
+    } else {
+      // تعديل فاتورة موجودة
+      _invoiceNumberController = TextEditingController(text: widget.invoice!.invoiceNumber);
+      _selectedDate = widget.invoice!.date;
+      _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_selectedDate));
+      _invoiceItems.addAll(widget.invoice!.items);
+
+      // تحميل المورد المحدد إذا كان موجودًا في الفاتورة
+      if (widget.invoice!.supplierId != null) {
+        _selectedSupplier = suppliersBox.get(widget.invoice!.supplierId);
+      }
+    }
+  }
+
+  String _generateNextInvoiceNumber() {
+    final allInvoices = invoicesBox.values.toList();
+    final purchaseInvoices = allInvoices.where((inv) => inv.type == InvoiceType.purchase).toList();
+    if (purchaseInvoices.isEmpty) {
+      return 'PO-0001';
+    }
+    // البحث عن أعلى رقم فاتورة شراء حالي
+    int maxNumber = 0;
+    for (var invoice in purchaseInvoices) {
+      if (invoice.invoiceNumber.startsWith('PO-')) {
+        try {
+          int currentNumber = int.parse(invoice.invoiceNumber.substring(3));
+          if (currentNumber > maxNumber) {
+            maxNumber = currentNumber;
+          }
+        } catch (e) {
+          // تجاهل الأخطاء إذا كان التنسيق غير صحيح
+        }
+      }
+    }
+    return 'PO-${(maxNumber + 1).toString().padLeft(4, '0')}';
+  }
+
+  @override
+  void dispose() {
+    _invoiceNumberController.dispose();
+    _dateController.dispose();
+    super.dispose();
+  }
+
+  // دالة لاختيار التاريخ
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
     );
-  }
-}
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  try {
-    prefs = await SharedPreferences.getInstance();
-
-    final appDocumentDir = await getApplicationDocumentsDirectory();
-    Hive.init(appDocumentDir.path);
-
-    // تسجيل جميع محولات (adapters) Hive لموديلات البيانات
-    Hive.registerAdapter(ItemAdapter());
-    Hive.registerAdapter(CustomerAdapter());
-    Hive.registerAdapter(InvoiceItemAdapter());
-    Hive.registerAdapter(InvoiceTypeAdapter());
-    Hive.registerAdapter(InvoiceAdapter());
-    Hive.registerAdapter(SupplierAdapter());
-
-    // فتح جميع صناديق Hive (Boxes)
-    await Hive.openBox<Item>('items_box');
-    await Hive.openBox<Customer>('customers_box');
-    await Hive.openBox<Invoice>('invoices_box');
-    await Hive.openBox<Supplier>('suppliers_box');
-
-    print('✅ App Initialization Complete: SharedPreferences, Hive, and Hive Boxes are ready.');
-  } catch (e, stacktrace) {
-    print('❌ Critical Error during App Initialization: $e');
-    print('Stacktrace: $stacktrace');
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      });
+    }
   }
 
-  runApp(const MyApp());
-}
+  // دالة لإضافة صنف جديد للفاتورة
+  void _addInvoiceItem() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String? selectedItemName;
+        double quantity = 1.0;
+        double price = 0.0;
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'تطبيق إدارة المبيعات والمخزون',
-      debugShowCheckedModeBanner: false,
-
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        fontFamily: 'Roboto',
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.indigo,
-          foregroundColor: Colors.white,
-          titleTextStyle: TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
+        return AlertDialog(
+          title: const Text('إضافة صنف للفاتورة'),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'الصنف',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      value: selectedItemName,
+                      items: itemsBox.values.map((item) {
+                        return DropdownMenuItem(
+                          value: item.name,
+                          child: Text(item.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedItemName = value;
+                          final selectedItem = itemsBox.values.firstWhere((item) => item.name == selectedItemName);
+                          price = selectedItem.salePrice; // افتراض سعر البيع هو السعر الافتراضي
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'الرجاء اختيار صنف';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'الكمية',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      keyboardType: TextInputType.number,
+                      initialValue: quantity.toString(),
+                      onChanged: (value) {
+                        quantity = double.tryParse(value) ?? 1.0;
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! <= 0) {
+                          return 'الرجاء إدخال كمية صحيحة';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'السعر',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      keyboardType: TextInputType.number,
+                      initialValue: price.toStringAsFixed(2),
+                      onChanged: (value) {
+                        price = double.tryParse(value) ?? 0.0;
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! < 0) {
+                          return 'الرجاء إدخال سعر صحيح';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-          iconTheme: IconThemeData(color: Colors.white),
-        ),
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Colors.indigo,
-          foregroundColor: Colors.white,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.indigo,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('إلغاء'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
             ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
-        cardTheme: const CardThemeData(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-          margin: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.indigo, width: 2),
-          ),
-          labelStyle: const TextStyle(color: Colors.indigo),
-          floatingLabelStyle: const TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold),
-          hintStyle: TextStyle(color: Colors.grey[600]),
-        ),
-        scaffoldBackgroundColor: Colors.grey[100],
-        textTheme: TextTheme(
-          titleLarge: TextStyle(color: Colors.indigo[800], fontSize: 24, fontWeight: FontWeight.bold),
-          titleMedium: TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.w600),
-          bodyMedium: TextStyle(color: Colors.black54, fontSize: 16),
-          labelLarge: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-      ),
-
-      home: FutureBuilder<bool>(
-        future: _checkPasswordStatus(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(color: Colors.indigo),
-              ),
-            );
-          }
-          if (snapshot.hasError) {
-            return Scaffold(
-              body: Center(
-                child: Text('حدث خطأ: ${snapshot.error}'),
-              ),
-            );
-          }
-          return snapshot.data == true ? const HomeScreen() : const LoginScreen();
-        },
-      ),
-
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/sales_invoices': (context) => const SalesInvoicesScreen(),
-        '/add_edit_invoice': (context) => const AddEditInvoiceScreen(),
-        '/inventory': (context) => const InventoryScreen(),
-        '/purchase_invoices': (context) => const PurchaseInvoicesScreen(),
-        '/add_edit_purchase_invoice': (context) => const AddEditPurchaseInvoiceScreen(),
-        '/customers': (context) => const PlaceholderScreen(title: 'العملاء'),
-        '/suppliers': (context) => const SuppliersScreen(), // ⭐ تم تفعيل هذا المسار لشاشة الموردين
-        '/add_edit_supplier': (context) => const AddEditSupplierScreen(), // ⭐ تم إضافة هذا المسار لشاشة إضافة/تعديل المورد
-        '/accounts': (context) => const PlaceholderScreen(title: 'كشف الحساب'),
-        '/reports': (context) => const PlaceholderScreen(title: 'التقارير'),
-        '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
-        '/settings': (context) => const PlaceholderScreen(title: 'الإعدادات'),
+            ElevatedButton(
+              child: const Text('إضافة'),
+              onPressed: () {
+                if (selectedItemName != null && quantity > 0 && price >= 0) {
+                  final newItem = InvoiceItem(
+                    itemName: selectedItemName!,
+                    quantity: quantity,
+                    price: price,
+                  );
+                  setState(() {
+                    _invoiceItems.add(newItem);
+                  });
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        );
       },
     );
   }
 
-  Future<bool> _checkPasswordStatus() async {
-    final storedPassword = prefs.getString('app_password');
-    return storedPassword != null && storedPassword.isNotEmpty;
+  // دالة لحذف صنف من الفاتورة
+  void _removeInvoiceItem(int index) {
+    setState(() {
+      _invoiceItems.removeAt(index);
+    });
+  }
+
+  // دالة لحساب إجمالي بنود الفاتورة
+  double _calculateTotal() {
+    double total = 0.0;
+    for (var item in _invoiceItems) {
+      total += item.quantity * item.price;
+    }
+    return total;
+  }
+
+  // دالة لحفظ الفاتورة
+  Future<void> _saveInvoice() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      final String invoiceNumber = _invoiceNumberController.text.trim();
+      final String? supplierId = _selectedSupplier?.id;
+      final String? supplierName = _selectedSupplier?.name;
+
+      if (widget.invoice == null) {
+        // إضافة فاتورة جديدة
+        final newInvoice = Invoice(
+          id: uuid.v4(),
+          invoiceNumber: invoiceNumber,
+          type: InvoiceType.purchase,
+          date: _selectedDate,
+          items: _invoiceItems,
+          customerId: null, // فاتورة شراء لا تحتاج customerId
+          customerName: null, // فاتورة شراء لا تحتاج customerName
+          supplierId: supplierId,
+          supplierName: supplierName,
+        );
+        await invoicesBox.put(newInvoice.id, newInvoice);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إضافة فاتورة الشراء بنجاح!')),
+        );
+      } else {
+        // تحديث فاتورة موجودة
+        final existingInvoice = widget.invoice!;
+        existingInvoice.invoiceNumber = invoiceNumber;
+        existingInvoice.date = _selectedDate;
+        existingInvoice.items = _invoiceItems;
+        existingInvoice.supplierId = supplierId;
+        existingInvoice.supplierName = supplierName;
+
+        await existingInvoice.save();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تحديث فاتورة الشراء بنجاح!')),
+        );
+      }
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.invoice == null ? 'إضافة فاتورة شراء' : 'تعديل فاتورة شراء'),
+        centerTitle: true,
+      ),
+      body: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  TextFormField(
+                    controller: _invoiceNumberController,
+                    decoration: InputDecoration(
+                      labelText: 'رقم الفاتورة',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      prefixIcon: const Icon(Icons.numbers),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'الرجاء إدخال رقم الفاتورة';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _dateController,
+                    decoration: InputDecoration(
+                      labelText: 'التاريخ',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      prefixIcon: const Icon(Icons.calendar_today),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.edit_calendar),
+                        onPressed: () => _selectDate(context),
+                      ),
+                    ),
+                    readOnly: true,
+                    onTap: () => _selectDate(context),
+                  ),
+                  const SizedBox(height: 16),
+                  ValueListenableBuilder<Box<Supplier>>(
+                    valueListenable: suppliersBox.listenable(),
+                    builder: (context, box, _) {
+                      final suppliers = box.values.toList().cast<Supplier>();
+                      return DropdownButtonFormField<Supplier>(
+                        decoration: InputDecoration(
+                          labelText: 'المورد (اختياري)',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          prefixIcon: const Icon(Icons.person_pin),
+                        ),
+                        value: _selectedSupplier,
+                        items: [
+                          const DropdownMenuItem<Supplier>(
+                            value: null,
+                            child: Text('بدون مورد'),
+                          ),
+                          ...suppliers.map((supplier) {
+                            return DropdownMenuItem(
+                              value: supplier,
+                              child: Text(supplier.name),
+                            );
+                          }).toList(),
+                        ],
+                        onChanged: (supplier) {
+                          setState(() {
+                            _selectedSupplier = supplier;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton.icon(
+                      onPressed: _addInvoiceItem,
+                      icon: const Icon(Icons.add),
+                      label: const Text('إضافة صنف'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'بنود الفاتورة:',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  _invoiceItems.isEmpty
+                      ? const Text('لا توجد أصناف في الفاتورة حتى الآن.')
+                      : ListView.builder(
+                          shrinkWrap: true, // مهم داخل Column أو Expanded
+                          physics: const NeverScrollableScrollPhysics(), // لمنع التمرير الداخلي
+                          itemCount: _invoiceItems.length,
+                          itemBuilder: (context, index) {
+                            final item = _invoiceItems[index];
+                            final itemTotal = item.quantity * item.price;
+                            final numberFormat = NumberFormat('#,##0.00', 'en_US');
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 4.0),
+                              child: ListTile(
+                                title: Text(item.itemName),
+                                subtitle: Text(
+                                  'الكمية: ${item.quantity} x السعر: ${numberFormat.format(item.price)} = الإجمالي: ${numberFormat.format(itemTotal)}',
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _removeInvoiceItem(index),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'الإجمالي الكلي للفاتورة: ${NumberFormat('#,##0.00', 'en_US').format(_calculateTotal())}',
+                    style: Theme.of(context).textTheme.titleLarge,
+                    textAlign: TextAlign.end,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton(
+                onPressed: _saveInvoice,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50), // زر بعرض كامل
+                ),
+                child: Text(
+                  widget.invoice == null ? 'حفظ فاتورة الشراء' : 'تحديث فاتورة الشراء',
+                  style: const TextStyle(fontSize: 18),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
