@@ -1,9 +1,37 @@
 // lib/screens/add_edit_purchase_invoice_screen.dart
+import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:uuid/uuid.
+import 'package:intl/intl.dart'; // لتنسيق التاريخ والأرقام
 
-// ... (استيرادات وبداية الكلاس) ...
+import 'package:mhasbb/models/invoice.dart';
+import 'package:mhasbb/models/invoice_item.dart';
+import 'package:mhasbb/models/item.dart'; // تأكد من استيراد موديل Item هنا
+import 'package:mhasbb/models/supplier.dart';
+
+class AddEditPurchaseInvoiceScreen extends StatefulWidget {
+  final Invoice? invoice; // فاتورة الشراء التي سيتم تعديلها (يمكن أن تكون null للإضافة)
+
+  const AddEditPurchaseInvoiceScreen({super.key, this.invoice});
+
+  @override
+  State<AddEditPurchaseInvoiceScreen> createState() => _AddEditPurchaseInvoiceScreenState();
+}
 
 class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScreen> {
-  // ... (المتحكمات والمتغيرات الأخرى) ...
+  final _formKey = GlobalKey<FormState>();
+  final Uuid uuid = const Uuid();
+
+  late TextEditingController _invoiceNumberController;
+  late TextEditingController _dateController;
+  Supplier? _selectedSupplier;
+  final List<InvoiceItem> _invoiceItems = [];
+
+  late Box<Invoice> invoicesBox;
+  late Box<Item> itemsBox;
+  late Box<Supplier> suppliersBox;
+
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -22,14 +50,59 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
       _invoiceNumberController = TextEditingController(text: widget.invoice!.invoiceNumber);
       _selectedDate = widget.invoice!.date;
       _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_selectedDate));
-      _invoiceItems.addAll(widget.invoice!.items); // تم إزالة final من 'items' في Invoice
+      _invoiceItems.addAll(widget.invoice!.items);
+
       if (widget.invoice!.supplierId != null) {
         _selectedSupplier = suppliersBox.get(widget.invoice!.supplierId);
       }
     }
   }
 
-  // ... (بقية دوال الكلاس مثل _generateNextInvoiceNumber و _selectDate) ...
+  String _generateNextInvoiceNumber() {
+    final allInvoices = invoicesBox.values.toList();
+    final purchaseInvoices = allInvoices.where((inv) => inv.type == InvoiceType.purchase).toList();
+    if (purchaseInvoices.isEmpty) {
+      return 'PO-0001';
+    }
+    // البحث عن أعلى رقم فاتورة شراء حالي
+    int maxNumber = 0;
+    for (var invoice in purchaseInvoices) {
+      if (invoice.invoiceNumber.startsWith('PO-')) {
+        try {
+          int currentNumber = int.parse(invoice.invoiceNumber.substring(3));
+          if (currentNumber > maxNumber) {
+            maxNumber = currentNumber;
+          }
+        } catch (e) {
+          // تجاهل الأخطاء إذا كان التنسيق غير صحيح
+        }
+      }
+    }
+    return 'PO-${(maxNumber + 1).toString().padLeft(4, '0')}';
+  }
+
+  @override
+  void dispose() {
+    _invoiceNumberController.dispose();
+    _dateController.dispose();
+    super.dispose();
+  }
+
+  // دالة لاختيار التاريخ
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      });
+    }
+  }
 
   // دالة لإضافة صنف جديد للفاتورة
   void _addInvoiceItem() {
@@ -38,7 +111,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
       builder: (context) {
         String? selectedItemName;
         double quantity = 1.0;
-        double price = 0.0; // هذا يمثل سعر الشراء الذي سيتم إدخاله أو افتراضه
+        double price = 0.0; // هذا يمثل سعر الشراء الذي سيتم إدخاله أو افتراضه لبند الفاتورة
 
         return AlertDialog(
           title: const Text('إضافة صنف للفاتورة'),
@@ -64,12 +137,8 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                         setState(() {
                           selectedItemName = value;
                           final selectedItem = itemsBox.values.firstWhere((item) => item.name == selectedItemName);
-                          // ⭐ تعديل هنا: استخدم اسم الحقل الصحيح لسعر الشراء في موديل Item
-                          // افترض أن حقل سعر الشراء في Item هو 'purchasePrice' أو 'price'
-                          // إذا كان اسمه 'purchasePrice':
-                          // price = selectedItem.purchasePrice;
-                          // إذا كان اسمه 'price' (كما هو شائع لسعر الشراء الافتراضي):
-                          price = selectedItem.price; // هذا هو الافتراض الشائع لسعر الشراء في موديل Item
+                          // ⭐ تم التعديل هنا: استخدام purchasePrice من موديل Item
+                          price = selectedItem.purchasePrice;
                         });
                       },
                       validator: (value) {
@@ -120,6 +189,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
               );
             },
           ),
+          // ⭐ هنا كان الخطأ: actions تتوقع قائمة من الـ Widgets مباشرة
           actions: <Widget>[
             TextButton(
               child: const Text('إلغاء'),
@@ -127,16 +197,15 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                 Navigator.of(context).pop();
               },
             ),
-            ElevatedButton(
-              child: const Text('إضافة'),
+            ElevatedButton( // ⭐ تم استخدام ElevatedButton بشكل صحيح هنا
               onPressed: () {
                 if (selectedItemName != null && quantity > 0 && price >= 0) {
                   final newItem = InvoiceItem(
-                    itemId: itemsBox.values.firstWhere((item) => item.name == selectedItemName!).id, // تأكد من الحصول على ID
+                    itemId: itemsBox.values.firstWhere((item) => item.name == selectedItemName!).id,
                     itemName: selectedItemName!,
                     quantity: quantity,
                     sellingPrice: price, // ⭐ تم التعديل هنا: يجب استخدام sellingPrice
-                    unit: 'قطعة', // ⭐ تحتاج إلى إضافة حقل اختيار الوحدة أو افتراضها
+                    unit: itemsBox.values.firstWhere((item) => item.name == selectedItemName!).unit, // استخدام الوحدة من الصنف نفسه
                   );
                   setState(() {
                     _invoiceItems.add(newItem);
@@ -144,6 +213,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                   Navigator.of(context).pop();
                 }
               },
+              child: const Text('إضافة'),
             ),
           ],
         );
@@ -151,12 +221,73 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
     );
   }
 
-  // ... (بقية الدوال مثل _removeInvoiceItem و _calculateTotal و _saveInvoice) ...
+  // دالة لحذف صنف من الفاتورة
+  void _removeInvoiceItem(int index) {
+    setState(() {
+      _invoiceItems.removeAt(index);
+    });
+  }
+
+  // دالة لحساب إجمالي بنود الفاتورة
+  double _calculateTotal() {
+    double total = 0.0;
+    for (var item in _invoiceItems) {
+      total += item.quantity * item.sellingPrice; // ⭐ تم التعديل هنا: استخدام sellingPrice
+    }
+    return total;
+  }
+
+  // دالة لحفظ الفاتورة
+  Future<void> _saveInvoice() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      final String invoiceNumber = _invoiceNumberController.text.trim();
+      final String? supplierId = _selectedSupplier?.id;
+      final String? supplierName = _selectedSupplier?.name;
+
+      if (widget.invoice == null) {
+        // إضافة فاتورة جديدة
+        final newInvoice = Invoice(
+          id: uuid.v4(),
+          invoiceNumber: invoiceNumber,
+          type: InvoiceType.purchase,
+          date: _selectedDate,
+          items: _invoiceItems,
+          customerId: null,
+          customerName: null,
+          supplierId: supplierId,
+          supplierName: supplierName,
+        );
+        await invoicesBox.put(newInvoice.id, newInvoice);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إضافة فاتورة الشراء بنجاح!')),
+        );
+      } else {
+        // تحديث فاتورة موجودة
+        final existingInvoice = widget.invoice!;
+        existingInvoice.invoiceNumber = invoiceNumber;
+        existingInvoice.date = _selectedDate;
+        existingInvoice.items = _invoiceItems;
+        existingInvoice.supplierId = supplierId;
+        existingInvoice.supplierName = supplierName;
+
+        await existingInvoice.save();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تحديث فاتورة الشراء بنجاح!')),
+        );
+      }
+      Navigator.of(context).pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ... (AppBar وبداية Form) ...
+      appBar: AppBar(
+        title: Text(widget.invoice == null ? 'إضافة فاتورة شراء' : 'تعديل فاتورة شراء'),
+        centerTitle: true,
+      ),
       body: Form(
         key: _formKey,
         child: Column(
@@ -165,7 +296,67 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
-                  // ... (حقول رقم الفاتورة والتاريخ والمورد) ...
+                  TextFormField(
+                    controller: _invoiceNumberController,
+                    decoration: InputDecoration(
+                      labelText: 'رقم الفاتورة',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      prefixIcon: const Icon(Icons.numbers),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'الرجاء إدخال رقم الفاتورة';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _dateController,
+                    decoration: InputDecoration(
+                      labelText: 'التاريخ',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      prefixIcon: const Icon(Icons.calendar_today),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.edit_calendar),
+                        onPressed: () => _selectDate(context),
+                      ),
+                    ),
+                    readOnly: true,
+                    onTap: () => _selectDate(context),
+                  ),
+                  const SizedBox(height: 16),
+                  ValueListenableBuilder<Box<Supplier>>(
+                    valueListenable: suppliersBox.listenable(),
+                    builder: (context, box, _) {
+                      final suppliers = box.values.toList().cast<Supplier>();
+                      return DropdownButtonFormField<Supplier>(
+                        decoration: InputDecoration(
+                          labelText: 'المورد (اختياري)',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          prefixIcon: const Icon(Icons.person_pin),
+                        ),
+                        value: _selectedSupplier,
+                        items: [
+                          const DropdownMenuItem<Supplier>(
+                            value: null,
+                            child: Text('بدون مورد'),
+                          ),
+                          ...suppliers.map((supplier) {
+                            return DropdownMenuItem(
+                              value: supplier,
+                              child: Text(supplier.name),
+                            );
+                          }).toList(),
+                        ],
+                        onChanged: (supplier) {
+                          setState(() {
+                            _selectedSupplier = supplier;
+                          });
+                        },
+                      );
+                    },
+                  ),
                   const SizedBox(height: 24),
                   Align(
                     alignment: Alignment.centerRight,
@@ -189,7 +380,6 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                           itemCount: _invoiceItems.length,
                           itemBuilder: (context, index) {
                             final item = _invoiceItems[index];
-                            // ⭐ تم التعديل هنا: استخدم item.sellingPrice
                             final itemTotal = item.quantity * item.sellingPrice;
                             final numberFormat = NumberFormat('#,##0.00', 'en_US');
 
@@ -198,7 +388,6 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                               child: ListTile(
                                 title: Text(item.itemName),
                                 subtitle: Text(
-                                  // ⭐ تم التعديل هنا: استخدم item.sellingPrice
                                   'الكمية: ${item.quantity} ${item.unit} x السعر: ${numberFormat.format(item.sellingPrice)} = الإجمالي: ${numberFormat.format(itemTotal)}',
                                 ),
                                 trailing: IconButton(
@@ -209,14 +398,20 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                             );
                           },
                         ),
-                  // ... (إجمالي الفاتورة وزر الحفظ) ...
+                  const SizedBox(height: 24),
+                  Text(
+                    'الإجمالي الكلي للفاتورة: ${NumberFormat('#,##0.00', 'en_US').format(_calculateTotal())}',
+                    style: Theme.of(context).textTheme.titleLarge,
+                    textAlign: TextAlign.end,
+                  ),
                 ],
               ),
             ),
-            Padding(
+            // ⭐ هنا كان الخطأ الرئيسي في البنية الذي أشار إليه الخطأ الأول
+            Padding( // ⭐ الـ Padding هنا صحيح لزر الحفظ الرئيسي في الشاشة
               padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton(
-                onPressed: _saveInvoice,
+              child: ElevatedButton( // ⭐ الـ ElevatedButton هنا صحيح
+                onPressed: _saveInvoice, // ⭐ الدالة _saveInvoice هنا متاحة ومستدعاة بشكل صحيح
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
                 ),
