@@ -1,54 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // لاستخدام SharedPreferences
+import 'package:shared_preferences/shared_preferences.dart';
 
 // استيراد الشاشات المكتملة التي سيتم التنقل إليها
 import 'package:mhasbb/screens/login_screen.dart';
 import 'package:mhasbb/screens/sales_invoices_screen.dart';
-import 'package:mhasbb/screens/inventory_screen.dart'; // شاشة المخزون
-import 'package:mhasbb/screens/purchase_invoices_screen.dart'; // شاشة فواتير الشراء
-import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen (للأقسام غير المكتملة)
-
+import 'package:mhasbb/screens/inventory_screen.dart';
+import 'package:mhasbb/screens/purchase_invoices_screen.dart';
+import 'package:mhasbb/screens/suppliers_screen.dart'; // ⭐ استيراد شاشة الموردين
+import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  // دالة لتسجيل الخروج
   Future<void> _logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('app_password'); // حذف كلمة المرور المحفوظة
-    // العودة إلى شاشة تسجيل الدخول وإزالة جميع المسارات السابقة
+    await prefs.remove('app_password');
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginScreen()),
       (Route<dynamic> route) => false,
     );
   }
 
-  // دالة للتنقل بين الأقسام المختلفة
   void _navigateToSection(BuildContext context, String sectionName) {
     switch (sectionName) {
       case 'فواتير البيع':
-        // هذا القسم مكتمل
         Navigator.push(context, MaterialPageRoute(builder: (context) => const SalesInvoicesScreen()));
         break;
       case 'فواتير الشراء':
-        // هذا القسم مكتمل
         Navigator.push(context, MaterialPageRoute(builder: (context) => const PurchaseInvoicesScreen()));
         break;
       case 'المخزون':
-        // هذا القسم مكتمل
         Navigator.push(context, MaterialPageRoute(builder: (context) => const InventoryScreen()));
         break;
+      case 'الموردين': // ⭐ الآن سيتم التوجيه إلى شاشة الموردين الفعلية
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const SuppliersScreen()));
+        break;
       case 'العملاء':
-      case 'الموردين':
       case 'كشف الحساب':
       case 'التقارير':
       case 'الضريبة':
       case 'الإعدادات':
-        // استخدام PlaceholderScreen للأقسام التي لم يتم إنشاؤها بعد
         Navigator.push(context, MaterialPageRoute(builder: (context) => PlaceholderScreen(title: sectionName)));
         break;
       default:
-        // في حالة وجود قسم غير معروف، لا تفعل شيئًا أو عرض رسالة خطأ
         break;
     }
   }
@@ -70,9 +64,9 @@ class HomeScreen extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: GridView.count(
-          crossAxisCount: 2, // عمودين في كل صف
-          crossAxisSpacing: 16.0, // المسافة الأفقية بين العناصر
-          mainAxisSpacing: 16.0, // المسافة الرأسية بين العناصر
+          crossAxisCount: 2,
+          crossAxisSpacing: 16.0,
+          mainAxisSpacing: 16.0,
           children: [
             _buildSectionCard(context, 'فواتير البيع', Icons.receipt, Colors.blueAccent),
             _buildSectionCard(context, 'فواتير الشراء', Icons.shopping_cart, Colors.green),
