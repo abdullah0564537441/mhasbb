@@ -15,18 +15,13 @@ import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart';
 import 'package:mhasbb/screens/suppliers_screen.dart';
 import 'package:mhasbb/screens/add_edit_supplier_screen.dart';
 
-// استيراد موديلات Hive وملفات الـ g.dart الخاصة بها
+// استيراد موديلات Hive (فقط الملفات الأساسية، وليس ملفات الـ g.dart)
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/supplier.dart';
-import 'package:mhasbb/models/item.g.dart'; // ⭐ تأكد من وجود جميع استيرادات الـ g.dart
-import 'package:mhasbb/models/customer.g.dart';
-import 'package:mhasbb/models/invoice_item.g.dart';
-import 'package:mhasbb/models/invoice.g.dart';
-import 'package:mhasbb/models/supplier.g.dart';
-import 'package:mhasbb/models/invoice_type.g.dart'; // ⭐⭐ هذا السطر مهم جداً لتصحيح المشكلة
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ تأكد من استيراد هذا الملف الأساسي لـ InvoiceType
 
 // ---
 late SharedPreferences prefs;
@@ -64,7 +59,8 @@ void main() async {
     Hive.init(appDocumentDir.path);
 
     // تسجيل جميع محولات (adapters) Hive لموديلات البيانات
-    // ⭐⭐ هذا السطر يجب أن يكون موجوداً
+    // بما أننا استوردنا الملفات الأساسية للموديلات، فإن الـ Adapters
+    // ستكون متاحة بشكل تلقائي لأنها جزء من تلك الملفات.
     Hive.registerAdapter(InvoiceTypeAdapter());
     Hive.registerAdapter(ItemAdapter());
     Hive.registerAdapter(CustomerAdapter());
