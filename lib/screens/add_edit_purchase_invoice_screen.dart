@@ -1,7 +1,4 @@
-// lib/screens/add_edit_purchase_invoice_screen.dart
-// تأكد أن جميع الـ imports في بداية الملف موجودة بشكل صحيح
-
-// ... (الكود العلوي لم يتغير، بما في ذلك _addInvoiceItem و _removeInvoiceItem و _calculateTotal)
+// ... (الكود العلوي لم يتغير)
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +132,6 @@
                 ],
               ),
             ),
-            // هذا هو الجزء الذي يسبب المشكلة إذا كان خارج دالة build
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: ElevatedButton(
@@ -154,4 +150,6 @@
       ),
     );
   }
-} // تأكد أن هذا القوس يغلق كلاس _AddEditPurchaseInvoiceScreenState
+}
+// ⭐ تأكد أن لا يوجد أي قوس إغلاق إضافي هنا في نهاية الملف
+// يجب أن يكون هذا القوس هو آخر قوس في الملف ويغلق الكلاس _AddEditPurchaseInvoiceScreenState
