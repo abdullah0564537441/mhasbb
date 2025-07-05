@@ -15,7 +15,8 @@ import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart';
 import 'package:mhasbb/screens/suppliers_screen.dart';
 import 'package:mhasbb/screens/add_edit_supplier_screen.dart';
 import 'package:mhasbb/screens/customers_screen.dart';
-import 'package:mhasbb/screens/account_statement_screen.dart'; // ⭐⭐ تم إضافة استيراد شاشة كشف الحساب
+import 'package:mhasbb/screens/account_statement_screen.dart';
+import 'package:mhasbb/screens/reports_screen.dart'; // ⭐⭐ استيراد شاشة التقارير الجديدة
 
 // استيراد موديلات Hive (فقط الملفات الأساسية، وليس ملفات الـ g.dart)
 import 'package:mhasbb/models/item.dart';
@@ -28,6 +29,7 @@ import 'package:mhasbb/models/invoice_type.dart';
 // ---
 late SharedPreferences prefs;
 
+// شاشة وهمية للميزات غير المكتملة
 class PlaceholderScreen extends StatelessWidget {
   final String title;
   const PlaceholderScreen({super.key, required this.title});
@@ -61,12 +63,13 @@ void main() async {
     Hive.init(appDocumentDir.path);
 
     // تسجيل جميع محولات (adapters) Hive لموديلات البيانات
-    Hive.registerAdapter(InvoiceTypeAdapter());
-    Hive.registerAdapter(ItemAdapter());
-    Hive.registerAdapter(CustomerAdapter());
-    Hive.registerAdapter(InvoiceItemAdapter());
-    Hive.registerAdapter(InvoiceAdapter());
-    Hive.registerAdapter(SupplierAdapter());
+    // تأكد أن ترتيب الـ typeId فريد لكل Adapter
+    Hive.registerAdapter(InvoiceTypeAdapter()); // typeId: 5
+    Hive.registerAdapter(ItemAdapter());         // typeId: 0
+    Hive.registerAdapter(CustomerAdapter());     // typeId: 6
+    Hive.registerAdapter(InvoiceItemAdapter());  // typeId: 2
+    Hive.registerAdapter(InvoiceAdapter());      // typeId: 3
+    Hive.registerAdapter(SupplierAdapter());     // typeId: 4
 
 
     // فتح جميع صناديق Hive (Boxes)
@@ -187,8 +190,8 @@ class _MyAppState extends State<MyApp> {
         '/customers': (context) => const CustomersScreen(),
         '/suppliers': (context) => const SuppliersScreen(),
         '/add_edit_supplier': (context) => const AddEditSupplierScreen(),
-        '/accounts': (context) => const AccountStatementScreen(), // ⭐⭐ تم التعديل هنا
-        '/reports': (context) => const PlaceholderScreen(title: 'التقارير'),
+        '/accounts': (context) => const AccountStatementScreen(),
+        '/reports': (context) => const ReportsScreen(), // ⭐⭐ تم تحديث المسار ليشير إلى ReportsScreen
         '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
         '/settings': (context) => const PlaceholderScreen(title: 'الإعدادات'),
       },
