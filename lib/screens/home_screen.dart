@@ -1,3 +1,4 @@
+// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,7 +7,8 @@ import 'package:mhasbb/screens/login_screen.dart';
 import 'package:mhasbb/screens/sales_invoices_screen.dart';
 import 'package:mhasbb/screens/inventory_screen.dart';
 import 'package:mhasbb/screens/purchase_invoices_screen.dart';
-import 'package:mhasbb/screens/suppliers_screen.dart'; // ⭐ استيراد شاشة الموردين
+import 'package:mhasbb/screens/suppliers_screen.dart';
+import 'package:mhasbb/screens/customers_screen.dart'; // ⭐⭐ أضف هذا السطر لاستيراد شاشة العملاء
 import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen
 
 class HomeScreen extends StatelessWidget {
@@ -32,10 +34,12 @@ class HomeScreen extends StatelessWidget {
       case 'المخزون':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const InventoryScreen()));
         break;
-      case 'الموردين': // ⭐ الآن سيتم التوجيه إلى شاشة الموردين الفعلية
+      case 'الموردين':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const SuppliersScreen()));
         break;
-      case 'العملاء':
+      case 'العملاء': // ⭐⭐ أضف هذه الحالة لتوجيه زر العملاء
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const CustomersScreen()));
+        break;
       case 'كشف الحساب':
       case 'التقارير':
       case 'الضريبة':
