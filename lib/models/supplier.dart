@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 
 part 'supplier.g.dart';
 
-@HiveType(typeId: 4) // ⭐ تأكد أن الـ typeId هذا فريد (4 هو جيد للموردين)
+@HiveType(typeId: 4) // تم التأكد من أنه فريد
 class Supplier extends HiveObject {
   @HiveField(0)
   final String id; // معرف فريد للمورد، يفضل أن يكون ثابتًا بعد الإنشاء
@@ -17,10 +17,10 @@ class Supplier extends HiveObject {
   @HiveField(3)
   String? address; // عنوان المورد (اختياري وقابل للتعديل)
 
-  @HiveField(4) // ⭐ حقل جديد: البريد الإلكتروني للمورد
+  @HiveField(4)
   String? email; // البريد الإلكتروني للمورد (اختياري وقابل للتعديل)
 
-  @HiveField(5) // ⭐ حقل جديد: ملاحظات إضافية عن المورد
+  @HiveField(5)
   String? notes; // ملاحظات إضافية عن المورد (اختياري وقابل للتعديل)
 
   Supplier({
@@ -28,7 +28,7 @@ class Supplier extends HiveObject {
     required this.name,
     this.phoneNumber,
     this.address,
-    this.email, // ⭐ أضف هذا في المُنشئ
-    this.notes, // ⭐ أضف هذا في المُنشئ
+    this.email,
+    this.notes,
   });
 }
