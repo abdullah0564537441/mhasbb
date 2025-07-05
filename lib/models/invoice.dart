@@ -1,42 +1,38 @@
 // lib/models/invoice.dart
 import 'package:hive/hive.dart';
-import 'package:mhasbb/models/invoice_item.dart'; // تأكد من استيراد InvoiceItem هنا
+import 'package:mhasbb/models/invoice_item.dart';
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ أضف هذا السطر
 
 part 'invoice.g.dart';
 
-enum InvoiceType {
-  @HiveField(0)
-  sale, // فاتورة مبيعات
-  @HiveField(1)
-  purchase, // فاتورة مشتريات
-}
+// تم إزالة تعريف enum InvoiceType من هنا
 
 @HiveType(typeId: 3) // تأكد أن الـ typeId هذا فريد
 class Invoice extends HiveObject {
   @HiveField(0)
-  final String id; // معرف فريد للفاتورة، يفضل أن يكون ثابتًا بعد الإنشاء
+  final String id;
 
   @HiveField(1)
-  String invoiceNumber; // رقم الفاتورة
+  String invoiceNumber;
 
   @HiveField(2)
-  InvoiceType type; // نوع الفاتورة: بيع أو شراء
+  InvoiceType type;
 
   @HiveField(3)
-  DateTime date; // تم إزالة final لتصبح قابلة للتعديل
+  DateTime date;
 
   @HiveField(4)
-  List<InvoiceItem> items; // تم إزالة final لتصبح قابلة للتعديل
+  List<InvoiceItem> items;
 
   @HiveField(5)
-  String? customerId; // تم إزالة final لتصبح قابلة للتعديل
+  String? customerId;
   @HiveField(6)
-  String? customerName; // تم إزالة final لتصبح قابلة للتعديل
+  String? customerName;
 
   @HiveField(7)
-  String? supplierId; // تم إزالة final لتصبح قابلة للتعديل
+  String? supplierId;
   @HiveField(8)
-  String? supplierName; // تم إزالة final لتصبح قابلة للتعديل
+  String? supplierName;
 
   Invoice({
     required this.id,
