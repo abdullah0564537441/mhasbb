@@ -14,7 +14,8 @@ import 'package:mhasbb/screens/purchase_invoices_screen.dart';
 import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart';
 import 'package:mhasbb/screens/suppliers_screen.dart';
 import 'package:mhasbb/screens/add_edit_supplier_screen.dart';
-import 'package:mhasbb/screens/customers_screen.dart'; // ⭐⭐ تأكد من استيراد شاشة العملاء هنا
+import 'package:mhasbb/screens/customers_screen.dart';
+import 'package:mhasbb/screens/account_statement_screen.dart'; // ⭐⭐ تم إضافة استيراد شاشة كشف الحساب
 
 // استيراد موديلات Hive (فقط الملفات الأساسية، وليس ملفات الـ g.dart)
 import 'package:mhasbb/models/item.dart';
@@ -183,10 +184,10 @@ class _MyAppState extends State<MyApp> {
         '/inventory': (context) => const InventoryScreen(),
         '/purchase_invoices': (context) => const PurchaseInvoicesScreen(),
         '/add_edit_purchase_invoice': (context) => const AddEditPurchaseInvoiceScreen(invoice: null),
-        '/customers': (context) => const CustomersScreen(), // ⭐⭐ تم التعديل هنا لتوجيه شاشة العملاء
+        '/customers': (context) => const CustomersScreen(),
         '/suppliers': (context) => const SuppliersScreen(),
         '/add_edit_supplier': (context) => const AddEditSupplierScreen(),
-        '/accounts': (context) => const PlaceholderScreen(title: 'كشف الحساب'),
+        '/accounts': (context) => const AccountStatementScreen(), // ⭐⭐ تم التعديل هنا
         '/reports': (context) => const PlaceholderScreen(title: 'التقارير'),
         '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
         '/settings': (context) => const PlaceholderScreen(title: 'الإعدادات'),
