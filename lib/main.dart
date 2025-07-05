@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,12 +15,18 @@ import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart';
 import 'package:mhasbb/screens/suppliers_screen.dart';
 import 'package:mhasbb/screens/add_edit_supplier_screen.dart';
 
-// استيراد موديلات Hive
+// استيراد موديلات Hive وملفات الـ g.dart الخاصة بها
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/supplier.dart';
+import 'package:mhasbb/models/item.g.dart'; // ⭐ تأكد من وجود جميع استيرادات الـ g.dart
+import 'package:mhasbb/models/customer.g.dart';
+import 'package:mhasbb/models/invoice_item.g.dart';
+import 'package:mhasbb/models/invoice.g.dart';
+import 'package:mhasbb/models/supplier.g.dart';
+import 'package:mhasbb/models/invoice_type.g.dart'; // ⭐⭐ هذا السطر مهم جداً لتصحيح المشكلة
 
 // ---
 late SharedPreferences prefs;
@@ -57,12 +64,14 @@ void main() async {
     Hive.init(appDocumentDir.path);
 
     // تسجيل جميع محولات (adapters) Hive لموديلات البيانات
+    // ⭐⭐ هذا السطر يجب أن يكون موجوداً
+    Hive.registerAdapter(InvoiceTypeAdapter());
     Hive.registerAdapter(ItemAdapter());
     Hive.registerAdapter(CustomerAdapter());
     Hive.registerAdapter(InvoiceItemAdapter());
-    // تم حذف: Hive.registerAdapter(InvoiceTypeAdapter()); // هذا السطر كان يسبب خطأ
     Hive.registerAdapter(InvoiceAdapter());
     Hive.registerAdapter(SupplierAdapter());
+
 
     // فتح جميع صناديق Hive (Boxes)
     await Hive.openBox<Item>('items_box');
@@ -178,7 +187,7 @@ class _MyAppState extends State<MyApp> {
         '/add_edit_invoice': (context) => const AddEditInvoiceScreen(),
         '/inventory': (context) => const InventoryScreen(),
         '/purchase_invoices': (context) => const PurchaseInvoicesScreen(),
-        '/add_edit_purchase_invoice': (context) => const AddEditPurchaseInvoiceScreen(invoice: null), // تم التعديل
+        '/add_edit_purchase_invoice': (context) => const AddEditPurchaseInvoiceScreen(invoice: null),
         '/customers': (context) => const PlaceholderScreen(title: 'العملاء'),
         '/suppliers': (context) => const SuppliersScreen(),
         '/add_edit_supplier': (context) => const AddEditSupplierScreen(),
