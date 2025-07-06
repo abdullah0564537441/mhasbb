@@ -17,8 +17,8 @@ import 'package:mhasbb/screens/add_edit_supplier_screen.dart';
 import 'package:mhasbb/screens/customers_screen.dart';
 import 'package:mhasbb/screens/account_statement_screen.dart';
 import 'package:mhasbb/screens/reports_screen.dart';
-import 'package:mhasbb/screens/vouchers_screen.dart'; // ⭐⭐ استيراد شاشة السندات
-import 'package:mhasbb/screens/add_edit_voucher_screen.dart'; // ⭐⭐ استيراد شاشة إضافة/تعديل السند
+import 'package:mhasbb/screens/vouchers_screen.dart';
+import 'package:mhasbb/screens/add_edit_voucher_screen.dart';
 
 // استيراد موديلات Hive (فقط الملفات الأساسية، وليس ملفات الـ g.dart)
 import 'package:mhasbb/models/item.dart';
@@ -27,8 +27,9 @@ import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/supplier.dart';
 import 'package:mhasbb/models/invoice_type.dart';
-import 'package:mhasbb/models/voucher.dart'; // ⭐⭐ استيراد نموذج السند
-import 'package:mhasbb/models/voucher_type.dart'; // ⭐⭐ استيراد نوع السند
+import 'package:mhasbb/models/voucher.dart';
+import 'package:mhasbb/models/voucher_type.dart';
+import 'package:mhasbb/models/payment_method.dart'; // ⭐⭐ أضف هذا السطر لاستيراد نموذج طريقة الدفع
 
 // ---
 late SharedPreferences prefs;
@@ -69,13 +70,14 @@ void main() async {
     // تسجيل جميع محولات (adapters) Hive لموديلات البيانات
     // تأكد أن ترتيب الـ typeId فريد لكل Adapter
     Hive.registerAdapter(InvoiceTypeAdapter()); // typeId: 5
-    Hive.registerAdapter(ItemAdapter());         // typeId: 0
-    Hive.registerAdapter(CustomerAdapter());     // typeId: 6
-    Hive.registerAdapter(InvoiceItemAdapter());  // typeId: 2
-    Hive.registerAdapter(InvoiceAdapter());      // typeId: 3
-    Hive.registerAdapter(SupplierAdapter());     // typeId: 4
-    Hive.registerAdapter(VoucherTypeAdapter()); // ⭐⭐ تسجيل محول VoucherType (typeId: 7)
-    Hive.registerAdapter(VoucherAdapter());      // ⭐⭐ تسجيل محول Voucher (typeId: 8)
+    Hive.registerAdapter(ItemAdapter()); // typeId: 0
+    Hive.registerAdapter(CustomerAdapter()); // typeId: 6
+    Hive.registerAdapter(InvoiceItemAdapter()); // typeId: 2
+    Hive.registerAdapter(InvoiceAdapter()); // typeId: 3
+    Hive.registerAdapter(SupplierAdapter()); // typeId: 4
+    Hive.registerAdapter(VoucherTypeAdapter()); // typeId: 7
+    Hive.registerAdapter(VoucherAdapter()); // typeId: 8
+    Hive.registerAdapter(PaymentMethodAdapter()); // ⭐⭐ أضف هذا السطر لتسجيل محول طريقة الدفع
 
 
     // فتح جميع صناديق Hive (Boxes)
@@ -83,7 +85,7 @@ void main() async {
     await Hive.openBox<Customer>('customers_box');
     await Hive.openBox<Invoice>('invoices_box');
     await Hive.openBox<Supplier>('suppliers_box');
-    await Hive.openBox<Voucher>('vouchers_box'); // ⭐⭐ فتح صندوق السندات
+    await Hive.openBox<Voucher>('vouchers_box');
 
     print('✅ App Initialization Complete: SharedPreferences, Hive, and Hive Boxes are ready.');
   } catch (e, stacktrace) {
@@ -199,8 +201,8 @@ class _MyAppState extends State<MyApp> {
         '/add_edit_supplier': (context) => const AddEditSupplierScreen(),
         '/accounts': (context) => const AccountStatementScreen(),
         '/reports': (context) => const ReportsScreen(),
-        '/vouchers': (context) => const VouchersScreen(), // ⭐⭐ مسار شاشة السندات
-        '/add_edit_voucher': (context) => const AddEditVoucherScreen(), // ⭐⭐ مسار شاشة إضافة/تعديل السند
+        '/vouchers': (context) => const VouchersScreen(),
+        '/add_edit_voucher': (context) => const AddEditVoucherScreen(),
         '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
         '/settings': (context) => const PlaceholderScreen(title: 'الإعدادات'),
       },
