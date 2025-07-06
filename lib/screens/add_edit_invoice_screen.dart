@@ -111,7 +111,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
     Item? selectedItemObject;
     double tempQuantity = 1.0;
     final TextEditingController _sellingPriceController = TextEditingController();
-    final TextEditingController _quantityController = TextEditingController(text: '1.0'); // إضافة متحكم للكمية
+    final TextEditingController _quantityController = TextEditingController(text: '1.0');
 
     final _itemFormKey = GlobalKey<FormState>();
     final TextEditingController _itemSearchController = TextEditingController();
@@ -122,7 +122,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
         return AlertDialog(
           title: const Text('إضافة صنف للفاتورة'),
           content: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setStateInDialog) { // استخدام setStateInDialog
+            builder: (BuildContext context, StateSetter setStateInDialog) {
               if (selectedItemObject != null && _sellingPriceController.text.isEmpty) {
                 _sellingPriceController.text = selectedItemObject!.sellingPrice.toStringAsFixed(2);
               }
@@ -131,7 +131,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                 key: _itemFormKey,
                 child: SingleChildScrollView(
                   child: Column(
-                    mainAxisSize: MainAxisSize.AxisSize.min,
+                    mainAxisSize: MainAxisSize.min, // ⭐ تم تصحيح هذا السطر
                     children: [
                       Autocomplete<Item>(
                         displayStringForOption: (Item option) => option.name,
@@ -144,12 +144,12 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                           });
                         },
                         onSelected: (Item selection) {
-                          setStateInDialog(() { // استخدام setStateInDialog
+                          setStateInDialog(() {
                             selectedItemObject = selection;
                             _itemSearchController.text = selection.name;
                             _sellingPriceController.text = selection.sellingPrice.toStringAsFixed(2);
-                            tempQuantity = 1.0; // إعادة تعيين الكمية عند اختيار صنف جديد
-                            _quantityController.text = '1.0'; // تحديث قيمة المتحكم
+                            tempQuantity = 1.0;
+                            _quantityController.text = '1.0';
                           });
                         },
                         fieldViewBuilder: (BuildContext context,
@@ -204,13 +204,12 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
-                        controller: _quantityController, // استخدام المتحكم هنا
+                        controller: _quantityController,
                         decoration: InputDecoration(
                           labelText: 'الكمية',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         keyboardType: TextInputType.number,
-                        // initialValue: tempQuantity.toString(), // لا نحتاج initialValue مع controller
                         onChanged: (value) {
                           tempQuantity = double.tryParse(value) ?? 0.0;
                         },
@@ -218,33 +217,21 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                           if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! <= 0) {
                             return 'الرجاء إدخال كمية صحيحة أكبر من 0';
                           }
-                          // ⭐ التحقق من توفر الكمية في المخزون
+                          // التحقق من توفر الكمية في المخزون
                           if (selectedItemObject != null) {
                             final currentItemInStock = itemsBox.get(selectedItemObject!.id);
                             if (currentItemInStock != null) {
-                              // حساب الكمية الحالية للصنف نفسه في الفاتورة (لتجنب التعديل الذاتي الخاطئ في وضع التعديل)
-                              final currentQuantityInInvoiceForThisItem = _invoiceItems
-                                  .where((element) => element.itemId == selectedItemObject!.id)
-                                  .fold(0.0, (previousValue, element) => previousValue + element.quantity);
-
-                              // في وضع التعديل، يجب أن نعيد الكمية الأصلية لهذا الصنف إلى المخزون مؤقتًا للتحقق
+                              // حساب المخزون الفعلي المتاح بعد الأخذ في الاعتبار الكميات الأصلية للفاتورة (في وضع التعديل)
                               double effectiveStock = currentItemInStock.quantity;
                               if (widget.invoice != null && _originalItemQuantities.containsKey(selectedItemObject!.id)) {
                                 effectiveStock += _originalItemQuantities[selectedItemObject!.id]!;
                               }
 
-                              // الكمية المطلوبة الإجمالية (الكمية الجديدة + أي كمية موجودة لنفس الصنف في الفاتورة قبل التعديل)
-                              // إذا كان الصنف يُضاف لأول مرة في الحوار، فالكمية المطلوبة هي tempQuantity
-                              // إذا كان الصنف موجودًا بالفعل في قائمة الفاتورة، يجب أن نأخذ في الاعتبار الكمية الموجودة بالفعل
-                              double totalRequestedQuantity = tempQuantity; // هذا يمثل الإضافة الجديدة فقط
-
-                              // للتحقق من الكمية الإجمالية بعد الإضافة
-                              // سنفترض أننا نجمع الكميات إذا كان الصنف موجودًا بالفعل في القائمة المؤقتة _invoiceItems
-                              // ولكن التحقق يجب أن يكون مقابل المخزون الفعلي بعد حساب التعديلات.
-                              // الحل الأبسط: تحقق من أن الكمية المطلوبة (tempQuantity) لا تتجاوز المخزون المتاح حاليًا
-                              // بعد حساب الكميات المسترجعة من الفاتورة الأصلية.
-                              if (effectiveStock < totalRequestedQuantity) {
-                                return 'الكمية المطلوبة ($totalRequestedQuantity) أكبر من المتوفر ($effectiveStock)';
+                              // إذا كان الصنف موجودًا بالفعل في قائمة الفاتورة المؤقتة، يجب حساب الكمية الكلية المطلوبة
+                              // هذا الجزء يحتاج إلى فهم دقيق لكيفية تفاعل الحوار مع القائمة الرئيسية.
+                              // الحل الأبسط: إذا كانت tempQuantity الحالية تتجاوز المخزون بعد استعادة الكميات القديمة.
+                              if (effectiveStock < tempQuantity) {
+                                return 'الكمية المطلوبة ($tempQuantity) أكبر من المتوفر ($effectiveStock)';
                               }
                             }
                           }
@@ -278,21 +265,20 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
                 _sellingPriceController.dispose();
-                _quantityController.dispose(); // التخلص من المتحكم
+                _quantityController.dispose();
               },
             ),
             ElevatedButton(
               onPressed: () {
                 if (_itemFormKey.currentState!.validate()) {
-                  // هنا لا نحتاج save() لأننا نستخدم controllers مباشرة
-                  // _itemFormKey.currentState!.save();
+                  // _itemFormKey.currentState!.save(); // لا نحتاجها مع Controllers
 
                   if (selectedItemObject != null) {
                     final existingItemIndex = _invoiceItems.indexWhere((item) => item.itemId == selectedItemObject!.id);
 
                     if (existingItemIndex != -1) {
                       // إذا كان الصنف موجودًا بالفعل في الفاتورة، قم بتحديث كميته وسعره
-                      setState(() { // يجب أن يكون هذا setState الخاص بـ _AddEditInvoiceScreenState
+                      setState(() {
                         _invoiceItems[existingItemIndex] = InvoiceItem(
                           itemId: selectedItemObject!.id,
                           itemName: selectedItemObject!.name,
@@ -312,13 +298,13 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                         purchasePrice: selectedItemObject!.purchasePrice,
                         unit: selectedItemObject!.unit,
                       );
-                      setState(() { // يجب أن يكون هذا setState الخاص بـ _AddEditInvoiceScreenState
+                      setState(() {
                         _invoiceItems.add(newItem);
                       });
                     }
                     Navigator.of(context).pop();
                     _sellingPriceController.dispose();
-                    _quantityController.dispose(); // التخلص من المتحكم
+                    _quantityController.dispose();
                   }
                 }
               },
@@ -369,10 +355,8 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                 itemInStock.quantity -= invoiceItem.quantity;
                 await itemInStock.save();
               } else {
-                // هذا السيناريو يجب أن يتم التعامل معه بواسطة validator في _addInvoiceItem
-                // ولكن كطبقة حماية إضافية
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('كمية الصنف ${invoiceItem.itemName} غير كافية في المخزون!')),
+                  SnackBar(content: Text('كمية الصنف ${invoiceItem.itemName} غير كافية في المخزون! يرجى تحديث الكمية أو مراجعة المخزون.')),
                 );
                 return; // إيقاف عملية الحفظ
               }
@@ -415,10 +399,8 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                 itemInStock.quantity -= invoiceItem.quantity; // نقص من المخزون
                 await itemInStock.save();
               } else {
-                // هذا السيناريو يجب أن يتم التعامل معه بواسطة validator في _addInvoiceItem
-                // ولكن كطبقة حماية إضافية
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('كمية الصنف ${invoiceItem.itemName} غير كافية في المخزون بعد التعديل!')),
+                  SnackBar(content: Text('كمية الصنف ${invoiceItem.itemName} غير كافية في المخزون بعد التعديل! يرجى مراجعة الكميات.')),
                 );
                 return; // إيقاف عملية الحفظ
               }
