@@ -26,13 +26,14 @@ class InvoiceAdapter extends TypeAdapter<Invoice> {
       customerName: fields[6] as String?,
       supplierId: fields[7] as String?,
       supplierName: fields[8] as String?,
+      paymentMethod: fields[9] as PaymentMethod,
     );
   }
 
   @override
   void write(BinaryWriter writer, Invoice obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +51,9 @@ class InvoiceAdapter extends TypeAdapter<Invoice> {
       ..writeByte(7)
       ..write(obj.supplierId)
       ..writeByte(8)
-      ..write(obj.supplierName);
+      ..write(obj.supplierName)
+      ..writeByte(9)
+      ..write(obj.paymentMethod);
   }
 
   @override
