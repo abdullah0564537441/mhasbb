@@ -6,7 +6,7 @@ import 'package:mhasbb/models/payment_method.dart'; // ⭐ أضف هذا الس�
 
 part 'invoice.g.dart';
 
-@HiveType(typeId: 2) // تأكد أن هذا الـ typeId فريد
+@HiveType(typeId: 3) // تأكد أن هذا الـ typeId فريد
 class Invoice extends HiveObject {
   @HiveField(0)
   late String id;
