@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 
 part 'payment_method.g.dart';
 
-@HiveType(typeId: 4) // تأكد أن هذا الـ typeId فريد وغير مستخدم
+@HiveType(typeId: 9) // تأكد أن هذا الـ typeId فريد وغير مستخدم
 enum PaymentMethod {
   @HiveField(0)
   cash, // نقدي
