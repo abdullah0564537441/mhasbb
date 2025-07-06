@@ -10,7 +10,8 @@ import 'package:mhasbb/screens/purchase_invoices_screen.dart';
 import 'package:mhasbb/screens/suppliers_screen.dart';
 import 'package:mhasbb/screens/customers_screen.dart';
 import 'package:mhasbb/screens/account_statement_screen.dart';
-import 'package:mhasbb/screens/reports_screen.dart'; // ⭐⭐ تم إضافة استيراد شاشة التقارير
+import 'package:mhasbb/screens/reports_screen.dart';
+import 'package:mhasbb/screens/vouchers_screen.dart'; // ⭐ تم إضافة استيراد شاشة السندات
 import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen
 
 class HomeScreen extends StatelessWidget {
@@ -45,8 +46,11 @@ class HomeScreen extends StatelessWidget {
       case 'كشف الحساب':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const AccountStatementScreen()));
         break;
-      case 'التقارير': // ⭐⭐ تم تحديث توجيه شاشة التقارير
+      case 'التقارير':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportsScreen()));
+        break;
+      case 'سندات الصرف والقبض': // ⭐ تم إضافة توجيه شاشة السندات
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const VouchersScreen()));
         break;
       case 'الضريبة':
       case 'الإعدادات':
@@ -84,7 +88,8 @@ class HomeScreen extends StatelessWidget {
             _buildSectionCard(context, 'العملاء', Icons.people, Colors.orange),
             _buildSectionCard(context, 'الموردين', Icons.local_shipping, Colors.purple),
             _buildSectionCard(context, 'كشف الحساب', Icons.account_balance_wallet, Colors.redAccent),
-            _buildSectionCard(context, 'التقارير', Icons.bar_chart, Colors.brown), // ⭐⭐ تأكد من وجود هذه البطاقة
+            _buildSectionCard(context, 'التقارير', Icons.bar_chart, Colors.brown),
+            _buildSectionCard(context, 'سندات الصرف والقبض', Icons.receipt_long, Colors.deepOrange), // ⭐ تم إضافة بطاقة السندات
             _buildSectionCard(context, 'الضريبة', Icons.calculate, Colors.lime),
             _buildSectionCard(context, 'الإعدادات', Icons.settings, Colors.grey),
           ],
