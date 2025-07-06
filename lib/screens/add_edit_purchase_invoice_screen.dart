@@ -7,8 +7,9 @@ import 'package:intl/intl.dart';
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/item.dart';
-import 'package:mhasbb/models/supplier.dart';
+import 'package:mhasbb/models/supplier.dart'; // تأكد من استيراد المورد
 import 'package:mhasbb/models/invoice_type.dart';
+import 'package:mhasbb/models/payment_method.dart'; // ⭐ أضف هذا السطر
 
 class AddEditPurchaseInvoiceScreen extends StatefulWidget {
   final Invoice? invoice;
@@ -37,17 +38,21 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
   // لوضع التعديل: تخزين الكميات الأصلية لاستعادتها
   final Map<String, double> _originalItemQuantities = {};
 
+  // ⭐ متغير جديد لطريقة الدفع
+  late PaymentMethod _selectedPaymentMethod;
+
   @override
   void initState() {
     super.initState();
     invoicesBox = Hive.box<Invoice>('invoices_box');
     itemsBox = Hive.box<Item>('items_box');
-    suppliersBox = Hive.box<Supplier>('suppliers_box');
+    suppliersBox = Hive.box<Supplier>('suppliers_box'); // تأكد من تهيئة صندوق الموردين
 
     if (widget.invoice == null) {
       _invoiceNumberController = TextEditingController(text: _generateNextInvoiceNumber());
       _selectedDate = DateTime.now();
       _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_selectedDate));
+      _selectedPaymentMethod = PaymentMethod.cash; // ⭐ قيمة افتراضية جديدة لفاتورة جديدة
     } else {
       _invoiceNumberController = TextEditingController(text: widget.invoice!.invoiceNumber);
       _selectedDate = widget.invoice!.date;
@@ -56,6 +61,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
       if (widget.invoice!.supplierId != null) {
         _selectedSupplier = suppliersBox.get(widget.invoice!.supplierId);
       }
+      _selectedPaymentMethod = widget.invoice!.paymentMethod; // ⭐ تحميل طريقة الدفع الموجودة
       // ملء الكميات الأصلية لوضع التعديل
       for (var item in widget.invoice!.items) {
         _originalItemQuantities[item.itemId] = item.quantity;
@@ -65,7 +71,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
 
   String _generateNextInvoiceNumber() {
     final allInvoices = invoicesBox.values.toList();
-    final purchaseInvoices = allInvoices.where((inv) => inv.type == InvoiceType.purchase).toList();
+    final purchaseInvoices = allInvoices.where((inv) => inv.type == InvoiceType.purchase).toList(); // استخدام InvoiceType.purchase
     if (purchaseInvoices.isEmpty) {
       return 'PO-0001';
     }
@@ -78,7 +84,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
             maxNumber = currentNumber;
           }
         } catch (e) {
-          // تجاهل الأخطاء إذا كان التنسيق غير صحيح
+          // Ignore errors if format is incorrect
         }
       }
     }
@@ -111,7 +117,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
     Item? selectedItemObject;
     double tempQuantity = 1.0;
     final TextEditingController _purchasePriceController = TextEditingController();
-    final TextEditingController _quantityController = TextEditingController(text: '1.0'); // إضافة متحكم للكمية
+    final TextEditingController _quantityController = TextEditingController(text: '1.0');
 
     final _itemFormKey = GlobalKey<FormState>();
     final TextEditingController _itemSearchController = TextEditingController();
@@ -120,9 +126,9 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('إضافة صنف لفاتورة الشراء'),
+          title: const Text('إضافة صنف للفاتورة'),
           content: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setStateInDialog) { // استخدام setStateInDialog
+            builder: (BuildContext context, StateSetter setStateInDialog) {
               if (selectedItemObject != null && _purchasePriceController.text.isEmpty) {
                 _purchasePriceController.text = selectedItemObject!.purchasePrice.toStringAsFixed(2);
               }
@@ -144,12 +150,12 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                           });
                         },
                         onSelected: (Item selection) {
-                          setStateInDialog(() { // استخدام setStateInDialog
+                          setStateInDialog(() {
                             selectedItemObject = selection;
                             _itemSearchController.text = selection.name;
                             _purchasePriceController.text = selection.purchasePrice.toStringAsFixed(2);
                             tempQuantity = 1.0;
-                            _quantityController.text = '1.0'; // تحديث قيمة المتحكم
+                            _quantityController.text = '1.0';
                           });
                         },
                         fieldViewBuilder: (BuildContext context,
@@ -204,21 +210,20 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
-                        controller: _quantityController, // استخدام المتحكم هنا
+                        controller: _quantityController,
                         decoration: InputDecoration(
                           labelText: 'الكمية',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         keyboardType: TextInputType.number,
-                        // initialValue: tempQuantity.toString(), // لا نحتاج initialValue مع controller
                         onChanged: (value) {
-                          tempQuantity = double.tryParse(value) ?? 1.0;
+                          tempQuantity = double.tryParse(value) ?? 0.0;
                         },
                         validator: (value) {
                           if (value == null || value.isEmpty || double.tryParse(value) == null || double.tryParse(value)! <= 0) {
                             return 'الرجاء إدخال كمية صحيحة أكبر من 0';
                           }
-                          return null;
+                          return null; // لا يوجد تحقق من المخزون في فاتورة الشراء (نحن نضيف للمخزون)
                         },
                       ),
                       const SizedBox(height: 16),
@@ -244,41 +249,36 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
           ),
           actions: <Widget>[
             TextButton(
+              child: const Text('إلغاء'),
               onPressed: () {
                 Navigator.of(context).pop();
                 _purchasePriceController.dispose();
-                _quantityController.dispose(); // التخلص من المتحكم
+                _quantityController.dispose();
               },
-              child: const Text('إلغاء'),
             ),
             ElevatedButton(
               onPressed: () {
                 if (_itemFormKey.currentState!.validate()) {
-                  // هنا لا نحتاج save() لأننا نستخدم controllers مباشرة
-                  // _itemFormKey.currentState!.save();
-
                   if (selectedItemObject != null) {
                     final existingItemIndex = _invoiceItems.indexWhere((item) => item.itemId == selectedItemObject!.id);
 
                     if (existingItemIndex != -1) {
-                      // إذا كان الصنف موجودًا بالفعل في الفاتورة، قم بتحديث كميته وسعره
                       setState(() {
                         _invoiceItems[existingItemIndex] = InvoiceItem(
                           itemId: selectedItemObject!.id,
                           itemName: selectedItemObject!.name,
-                          quantity: _invoiceItems[existingItemIndex].quantity + tempQuantity, // أضف إلى الكمية الموجودة
-                          sellingPrice: selectedItemObject!.sellingPrice, // احتفظ بسعر البيع الأصلي للصنف
+                          quantity: _invoiceItems[existingItemIndex].quantity + tempQuantity,
+                          sellingPrice: selectedItemObject!.sellingPrice, // لا نغير سعر البيع هنا
                           purchasePrice: double.tryParse(_purchasePriceController.text) ?? selectedItemObject!.purchasePrice,
                           unit: selectedItemObject!.unit,
                         );
                       });
                     } else {
-                      // إضافة صنف جديد إلى الفاتورة
                       final newItem = InvoiceItem(
                         itemId: selectedItemObject!.id,
                         itemName: selectedItemObject!.name,
                         quantity: tempQuantity,
-                        sellingPrice: selectedItemObject!.sellingPrice, // احتفظ بسعر البيع الأصلي للصنف
+                        sellingPrice: selectedItemObject!.sellingPrice,
                         purchasePrice: double.tryParse(_purchasePriceController.text) ?? selectedItemObject!.purchasePrice,
                         unit: selectedItemObject!.unit,
                       );
@@ -288,7 +288,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                     }
                     Navigator.of(context).pop();
                     _purchasePriceController.dispose();
-                    _quantityController.dispose(); // التخلص من المتحكم
+                    _quantityController.dispose();
                   }
                 }
               },
@@ -309,7 +309,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
   double _calculateTotal() {
     double total = 0.0;
     for (var item in _invoiceItems) {
-      total += item.quantity * item.purchasePrice; // هنا نستخدم purchasePrice للمشتريات
+      total += item.quantity * item.purchasePrice; // هنا نحسب بناءً على سعر الشراء
     }
     return total;
   }
@@ -331,11 +331,11 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
 
       try {
         if (widget.invoice == null) {
-          // فاتورة شراء جديدة: زيادة المخزون
+          // فاتورة شراء جديدة: إضافة للمخزون
           for (var invoiceItem in _invoiceItems) {
             final itemInStock = itemsBox.get(invoiceItem.itemId);
             if (itemInStock != null) {
-              itemInStock.quantity += invoiceItem.quantity;
+              itemInStock.quantity += invoiceItem.quantity; // زيادة المخزون
               await itemInStock.save();
             }
           }
@@ -343,13 +343,14 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
           final newInvoice = Invoice(
             id: uuid.v4(),
             invoiceNumber: invoiceNumber,
-            type: InvoiceType.purchase,
+            type: InvoiceType.purchase, // فاتورة شراء
             date: _selectedDate,
             items: _invoiceItems.toList(),
             customerId: null,
             customerName: null,
             supplierId: supplierId,
             supplierName: supplierName,
+            paymentMethod: _selectedPaymentMethod, // ⭐ حفظ طريقة الدفع
           );
           await invoicesBox.put(newInvoice.id, newInvoice);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -363,16 +364,16 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
             final originalQty = entry.value;
             final itemInStock = itemsBox.get(itemId);
             if (itemInStock != null) {
-              itemInStock.quantity -= originalQty; // نقص من المخزون
+              itemInStock.quantity -= originalQty; // نقص المخزون
               await itemInStock.save();
             }
           }
 
-          // 2. ثانياً: زيادة الكميات الجديدة في المخزون
+          // 2. ثانياً: إضافة الكميات الجديدة إلى المخزون
           for (var invoiceItem in _invoiceItems) {
             final itemInStock = itemsBox.get(invoiceItem.itemId);
             if (itemInStock != null) {
-              itemInStock.quantity += invoiceItem.quantity; // زيادة في المخزون
+              itemInStock.quantity += invoiceItem.quantity; // إضافة إلى المخزون
               await itemInStock.save();
             }
           }
@@ -383,6 +384,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
           existingInvoice.items = _invoiceItems.toList();
           existingInvoice.supplierId = supplierId;
           existingInvoice.supplierName = supplierName;
+          existingInvoice.paymentMethod = _selectedPaymentMethod; // ⭐ تحديث طريقة الدفع
 
           await existingInvoice.save();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -400,6 +402,20 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('الرجاء إكمال جميع الحقول المطلوبة بشكل صحيح.')),
       );
+    }
+  }
+
+  // دالة مساعدة لتحويل قيمة PaymentMethod إلى نص عربي
+  String _getPaymentMethodDisplayName(PaymentMethod method) {
+    switch (method) {
+      case PaymentMethod.cash:
+        return 'نقدي';
+      case PaymentMethod.credit:
+        return 'آجل';
+      case PaymentMethod.bankTransfer:
+        return 'تحويل بنكي';
+      default:
+        return 'غير محدد';
     }
   }
 
@@ -479,6 +495,35 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                       );
                     },
                   ),
+                  const SizedBox(height: 16),
+                  // ⭐ حقل جديد لاختيار طريقة الدفع
+                  DropdownButtonFormField<PaymentMethod>(
+                    decoration: InputDecoration(
+                      labelText: 'طريقة الدفع',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      prefixIcon: const Icon(Icons.payment),
+                    ),
+                    value: _selectedPaymentMethod,
+                    items: PaymentMethod.values.map((method) {
+                      return DropdownMenuItem(
+                        value: method,
+                        child: Text(_getPaymentMethodDisplayName(method)),
+                      );
+                    }).toList(),
+                    onChanged: (method) {
+                      if (method != null) {
+                        setState(() {
+                          _selectedPaymentMethod = method;
+                        });
+                      }
+                    },
+                    validator: (value) {
+                      if (value == null) {
+                        return 'الرجاء اختيار طريقة الدفع';
+                      }
+                      return null;
+                    },
+                  ),
                   const SizedBox(height: 24),
                   Align(
                     alignment: Alignment.centerRight,
@@ -506,7 +551,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                         itemCount: currentItems.length,
                         itemBuilder: (context, index) {
                           final item = currentItems[index];
-                          final itemTotal = item.quantity * item.purchasePrice;
+                          final itemTotal = item.quantity * item.purchasePrice; // سعر الشراء
                           final numberFormat = NumberFormat('#,##0.00', 'en_US');
 
                           return Card(
