@@ -22,17 +22,18 @@ class VoucherAdapter extends TypeAdapter<Voucher> {
       type: fields[2] as VoucherType,
       date: fields[3] as DateTime,
       amount: fields[4] as double,
-      description: fields[5] as String,
-      relatedPartyId: fields[6] as String?,
-      relatedPartyName: fields[7] as String?,
-      paymentMethod: fields[8] as String,
+      paymentMethod: fields[5] as PaymentMethod,
+      partyId: fields[6] as String?,
+      partyName: fields[7] as String?,
+      partyType: fields[8] as String?,
+      notes: fields[9] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Voucher obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,13 +45,15 @@ class VoucherAdapter extends TypeAdapter<Voucher> {
       ..writeByte(4)
       ..write(obj.amount)
       ..writeByte(5)
-      ..write(obj.description)
+      ..write(obj.paymentMethod)
       ..writeByte(6)
-      ..write(obj.relatedPartyId)
+      ..write(obj.partyId)
       ..writeByte(7)
-      ..write(obj.relatedPartyName)
+      ..write(obj.partyName)
       ..writeByte(8)
-      ..write(obj.paymentMethod);
+      ..write(obj.partyType)
+      ..writeByte(9)
+      ..write(obj.notes);
   }
 
   @override
