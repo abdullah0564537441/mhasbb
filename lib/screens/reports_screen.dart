@@ -4,7 +4,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/invoice_item.dart';
-import 'package:mhasbb/models/invoice_type.dart';
 import 'package:mhasbb/models/item.dart';
 
 enum ReportType { sales, purchases, inventory }
