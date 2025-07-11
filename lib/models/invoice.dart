@@ -41,7 +41,7 @@ class Invoice extends HiveObject {
   @HiveField(10)
   String? originalInvoiceId;
 
-  @HiveField(11) // ⭐⭐ حقل جديد: إجمالي الفاتورة ⭐⭐
+  @HiveField(11) // ⭐⭐ تم إضافة هذا الحقل ⭐⭐
   late double totalAmount;
 
   Invoice({
