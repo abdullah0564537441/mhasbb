@@ -6,11 +6,12 @@ import 'package:uuid/uuid.dart';
 
 import 'package:mhasbb/models/voucher.dart';
 import 'package:mhasbb/models/voucher_type.dart';
-import 'package:mhasbb/models/customer.dart'; // لاستخدام العملاء
-import 'package:mhasbb/models/supplier.dart'; // لاستخدام الموردين
+import 'package:mhasbb/models/payment_method.dart';
+import 'package:mhasbb/models/customer.dart';
+import 'package:mhasbb/models/supplier.dart';
 
 class AddEditVoucherScreen extends StatefulWidget {
-  final Voucher? voucher; // السند المراد تعديله، null للإضافة
+  final Voucher? voucher;
 
   const AddEditVoucherScreen({super.key, this.voucher});
 
@@ -20,91 +21,59 @@ class AddEditVoucherScreen extends StatefulWidget {
 
 class _AddEditVoucherScreenState extends State<AddEditVoucherScreen> {
   final _formKey = GlobalKey<FormState>();
-  late Box<Voucher> vouchersBox;
-  late Box<Customer> customersBox;
-  late Box<Supplier> suppliersBox;
-  final Uuid _uuid = const Uuid();
+  final _voucherNumberController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _descriptionController = TextEditingController(); // لإضافة وصف/بيان
 
-  late String _id;
-  late String _voucherNumber;
-  late VoucherType _type;
-  late DateTime _date;
-  late TextEditingController _amountController;
-  late TextEditingController _descriptionController;
-  late TextEditingController _paymentMethodController;
-  String? _selectedRelatedPartyId;
-  String? _selectedRelatedPartyName;
+  DateTime _selectedDate = DateTime.now();
+  VoucherType? _selectedVoucherType;
+  PaymentMethod? _selectedPaymentMethod = PaymentMethod.cash;
+
+  String? _selectedPartyType; // 'Customer', 'Supplier', 'Other'
+  String? _selectedPartyId;
+  String? _selectedPartyName;
+
+  List<Customer> _customers = [];
+  List<Supplier> _suppliers = [];
 
   @override
   void initState() {
     super.initState();
-    vouchersBox = Hive.box<Voucher>('vouchers_box');
-    customersBox = Hive.box<Customer>('customers_box');
-    suppliersBox = Hive.box<Supplier>('suppliers_box');
-
-    if (widget.voucher == null) {
-      // وضع افتراضيات لسند جديد
-      _id = _uuid.v4();
-      _voucherNumber = _generateNextVoucherNumber(VoucherType.income); // افتراضي قبض
-      _type = VoucherType.income;
-      _date = DateTime.now();
-      _amountController = TextEditingController();
-      _descriptionController = TextEditingController();
-      _paymentMethodController = TextEditingController(text: 'نقدي'); // افتراضي نقدي
-      _selectedRelatedPartyId = null;
-      _selectedRelatedPartyName = null;
+    _loadParties();
+    if (widget.voucher != null) {
+      _voucherNumberController.text = widget.voucher!.voucherNumber;
+      _amountController.text = widget.voucher!.amount.toString();
+      _selectedDate = widget.voucher!.date;
+      _selectedVoucherType = widget.voucher!.type;
+      _selectedPaymentMethod = widget.voucher!.paymentMethod;
+      _descriptionController.text = widget.voucher!.description ?? ''; // ⭐⭐ تم التصحيح هنا ⭐⭐
+      _selectedPartyId = widget.voucher!.partyId; // ⭐⭐ تم التصحيح هنا ⭐⭐
+      _selectedPartyName = widget.voucher!.partyName; // ⭐⭐ تم التصحيح هنا ⭐⭐
+      _selectedPartyType = widget.voucher!.partyType; // ⭐⭐ تم التصحيح هنا ⭐⭐
     } else {
-      // تهيئة الواجهة بسند موجود للتعديل
-      _id = widget.voucher!.id;
-      _voucherNumber = widget.voucher!.voucherNumber;
-      _type = widget.voucher!.type;
-      _date = widget.voucher!.date;
-      _amountController = TextEditingController(text: widget.voucher!.amount.toString());
-      _descriptionController = TextEditingController(text: widget.voucher!.description);
-      _paymentMethodController = TextEditingController(text: widget.voucher!.paymentMethod);
-      _selectedRelatedPartyId = widget.voucher!.relatedPartyId;
-      _selectedRelatedPartyName = widget.voucher!.relatedPartyName;
+      _voucherNumberController.text = 'VOU-${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}'; // رقم تلقائي
     }
   }
 
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _descriptionController.dispose();
-    _paymentMethodController.dispose();
-    super.dispose();
-  }
-
-  // توليد رقم السند التالي بناءً على النوع (صرف/قبض)
-  String _generateNextVoucherNumber(VoucherType type) {
-    final allVouchers = vouchersBox.values.where((v) => v.type == type).toList();
-    if (allVouchers.isEmpty) {
-      return type == VoucherType.income ? 'QV-0001' : 'DV-0001'; // QV: سند قبض، DV: سند صرف
-    }
-    allVouchers.sort((a, b) => a.voucherNumber.compareTo(b.voucherNumber));
-    final lastNumber = allVouchers.last.voucherNumber;
-    final parts = lastNumber.split('-');
-    if (parts.length == 2 && parts[1].isNotEmpty) {
-      try {
-        int num = int.parse(parts[1]);
-        return '${parts[0]}-${(num + 1).toString().padLeft(4, '0')}';
-      } catch (e) {
-        // Fallback if parsing fails
-      }
-    }
-    return type == VoucherType.income ? 'QV-0001' : 'DV-0001';
+  Future<void> _loadParties() async {
+    final customerBox = Hive.box<Customer>('customers_box');
+    final supplierBox = Hive.box<Supplier>('suppliers_box');
+    setState(() {
+      _customers = customerBox.values.toList();
+      _suppliers = supplierBox.values.toList();
+    });
   }
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _date,
+      initialDate: _selectedDate,
       firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: DateTime(2101),
     );
-    if (picked != null && picked != _date) {
+    if (picked != null && picked != _selectedDate) {
       setState(() {
-        _date = picked;
+        _selectedDate = picked;
       });
     }
   }
@@ -113,32 +82,38 @@ class _AddEditVoucherScreenState extends State<AddEditVoucherScreen> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      final newVoucher = Voucher(
-        id: _id,
-        voucherNumber: _voucherNumber,
-        type: _type,
-        date: _date,
-        amount: double.parse(_amountController.text),
-        description: _descriptionController.text,
-        relatedPartyId: _selectedRelatedPartyId,
-        relatedPartyName: _selectedRelatedPartyName,
-        paymentMethod: _paymentMethodController.text,
-      );
+      final voucherBox = Hive.box<Voucher>('vouchers_box');
 
-      try {
-        await vouchersBox.put(newVoucher.id, newVoucher);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.voucher == null ? 'تمت إضافة السند بنجاح.' : 'تم تعديل السند بنجاح.'),
-          ),
+      if (widget.voucher == null) {
+        final newVoucher = Voucher(
+          id: const Uuid().v4(),
+          voucherNumber: _voucherNumberController.text,
+          type: _selectedVoucherType!,
+          date: _selectedDate,
+          amount: double.parse(_amountController.text),
+          paymentMethod: _selectedPaymentMethod!,
+          partyId: _selectedPartyId,
+          partyName: _selectedPartyName,
+          partyType: _selectedPartyType,
+          description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null, // ⭐⭐ تم إضافة الحقل هنا ⭐⭐
         );
-        Navigator.of(context).pop();
-      } catch (e) {
+        await voucherBox.put(newVoucher.id, newVoucher);
+      } else {
+        widget.voucher!.voucherNumber = _voucherNumberController.text;
+        widget.voucher!.amount = double.parse(_amountController.text);
+        widget.voucher!.date = _selectedDate;
+        widget.voucher!.type = _selectedVoucherType!;
+        widget.voucher!.paymentMethod = _selectedPaymentMethod!;
+        widget.voucher!.partyId = _selectedPartyId;
+        widget.voucher!.partyName = _selectedPartyName;
+        widget.voucher!.partyType = _selectedPartyType;
+        widget.voucher!.description = _descriptionController.text.isNotEmpty ? _descriptionController.text : null; // ⭐⭐ تم تحديث الحقل هنا ⭐⭐
+        await widget.voucher!.save();
+      }
+      if (mounted) {
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في حفظ السند: $e'),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text('تم حفظ السند بنجاح')),
         );
       }
     }
@@ -146,190 +121,220 @@ class _AddEditVoucherScreenState extends State<AddEditVoucherScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // قائمة الأطراف المرتبطة (عملاء وموردين)
-    final List<dynamic> allParties = [
-      ...customersBox.values.toList().cast<Customer>(),
-      ...suppliersBox.values.toList().cast<Supplier>(),
-    ];
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.voucher == null ? 'إضافة سند جديد' : 'تعديل سند'),
+        title: Text(widget.voucher == null ? 'إضافة سند' : 'تعديل سند'),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // اختيار نوع السند (صرف/قبض)
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<VoucherType>(
-                      title: const Text('سند قبض'),
-                      value: VoucherType.income,
-                      groupValue: _type,
-                      onChanged: (VoucherType? value) {
-                        setState(() {
-                          _type = value!;
-                          if (widget.voucher == null) { // فقط إذا كان سند جديد
-                            _voucherNumber = _generateNextVoucherNumber(_type);
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<VoucherType>(
-                      title: const Text('سند صرف'),
-                      value: VoucherType.expense,
-                      groupValue: _type,
-                      onChanged: (VoucherType? value) {
-                        setState(() {
-                          _type = value!;
-                          if (widget.voucher == null) { // فقط إذا كان سند جديد
-                            _voucherNumber = _generateNextVoucherNumber(_type);
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                ],
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            TextFormField(
+              controller: _voucherNumberController,
+              decoration: const InputDecoration(
+                labelText: 'رقم السند',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 20),
-
-              // رقم السند (للقراءة فقط في وضع التعديل)
-              TextFormField(
-                initialValue: _voucherNumber,
-                readOnly: true, // عادة ما يكون رقم السند للقراءة فقط
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'الرجاء إدخال رقم السند';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 15),
+            InkWell(
+              onTap: () => _selectDate(context),
+              child: InputDecorator(
                 decoration: const InputDecoration(
-                  labelText: 'رقم السند',
+                  labelText: 'تاريخ السند',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.calendar_today),
                 ),
+                child: Text(DateFormat('yyyy-MM-dd').format(_selectedDate)),
               ),
-              const SizedBox(height: 15),
-
-              // التاريخ
-              InkWell(
-                onTap: () => _selectDate(context),
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'التاريخ',
-                    border: OutlineInputBorder(),
-                  ),
-                  child: Text(
-                    DateFormat('yyyy-MM-dd').format(_date),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
+            ),
+            const SizedBox(height: 15),
+            TextFormField(
+              controller: _amountController,
+              decoration: const InputDecoration(
+                labelText: 'المبلغ',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 15),
-
-              // المبلغ
-              TextFormField(
-                controller: _amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'المبلغ',
-                  hintText: 'أدخل المبلغ',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'الرجاء إدخال المبلغ';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'الرجاء إدخال رقم صحيح';
-                  }
-                  return null;
-                },
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty || double.tryParse(value) == null || double.parse(value) <= 0) {
+                  return 'الرجاء إدخال مبلغ صحيح';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 15),
+            DropdownButtonFormField<VoucherType>(
+              value: _selectedVoucherType,
+              decoration: const InputDecoration(
+                labelText: 'نوع السند',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 15),
-
-              // البيان/الوصف
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'البيان / الوصف',
-                  hintText: 'وصف السند',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'الرجاء إدخال البيان / الوصف';
-                  }
-                  return null;
-                },
+              hint: const Text('اختر نوع السند'),
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedVoucherType = newValue;
+                });
+              },
+              items: VoucherType.values.map((type) {
+                return DropdownMenuItem(
+                  value: type,
+                  child: Text(type == VoucherType.receipt ? 'سند قبض' : 'سند صرف'),
+                );
+              }).toList(),
+              validator: (value) {
+                if (value == null) {
+                  return 'الرجاء اختيار نوع السند';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 15),
+            DropdownButtonFormField<PaymentMethod>(
+              value: _selectedPaymentMethod,
+              decoration: const InputDecoration(
+                labelText: 'طريقة الدفع/القبض',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 15),
-
-              // الطرف المرتبط (عميل أو مورد)
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedPaymentMethod = newValue;
+                });
+              },
+              items: PaymentMethod.values.map((method) {
+                return DropdownMenuItem(
+                  value: method,
+                  child: Text(method == PaymentMethod.cash ? 'نقدي' : 'شيك/تحويل'),
+                );
+              }).toList(),
+              validator: (value) {
+                if (value == null) {
+                  return 'الرجاء اختيار طريقة الدفع/القبض';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 15),
+            DropdownButtonFormField<String>(
+              value: _selectedPartyType,
+              decoration: const InputDecoration(
+                labelText: 'نوع الطرف (عميل/مورد/آخر)',
+                border: OutlineInputBorder(),
+              ),
+              hint: const Text('اختر نوع الطرف'),
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedPartyType = newValue;
+                  _selectedPartyId = null; // إعادة تعيين الطرف المحدد عند تغيير النوع
+                  _selectedPartyName = null;
+                });
+              },
+              items: const [
+                DropdownMenuItem(value: 'Customer', child: Text('عميل')),
+                DropdownMenuItem(value: 'Supplier', child: Text('مورد')),
+                DropdownMenuItem(value: 'Other', child: Text('طرف آخر')),
+              ],
+            ),
+            const SizedBox(height: 15),
+            if (_selectedPartyType == 'Customer')
               DropdownButtonFormField<String>(
+                value: _selectedPartyId,
                 decoration: const InputDecoration(
-                  labelText: 'الطرف المرتبط (اختياري)',
+                  labelText: 'العميل',
                   border: OutlineInputBorder(),
                 ),
-                value: _selectedRelatedPartyId,
-                onChanged: (String? newValue) {
+                hint: const Text('اختر العميل'),
+                onChanged: (newValue) {
                   setState(() {
-                    _selectedRelatedPartyId = newValue;
-                    if (newValue != null) {
-                      final selectedParty = allParties.firstWhere((p) => p.id == newValue);
-                      _selectedRelatedPartyName = selectedParty.name;
-                    } else {
-                      _selectedRelatedPartyName = null;
-                    }
+                    _selectedPartyId = newValue;
+                    _selectedPartyName = _customers.firstWhere((c) => c.id == newValue).name;
                   });
                 },
-                items: [
-                  const DropdownMenuItem<String>(
-                    value: null,
-                    child: Text('بدون طرف مرتبط'),
-                  ),
-                  ...allParties.map((party) {
-                    return DropdownMenuItem<String>(
-                      value: party.id,
-                      child: Text('${party.name} (${party is Customer ? 'عميل' : 'مورد'})'),
-                    );
-                  }).toList(),
-                ],
+                items: _customers.map((customer) {
+                  return DropdownMenuItem(
+                    value: customer.id,
+                    child: Text(customer.name),
+                  );
+                }).toList(),
               ),
-              const SizedBox(height: 15),
-
-              // طريقة الدفع/القبض
-              TextFormField(
-                controller: _paymentMethodController,
+            if (_selectedPartyType == 'Supplier')
+              DropdownButtonFormField<String>(
+                value: _selectedPartyId,
                 decoration: const InputDecoration(
-                  labelText: 'طريقة الدفع/القبض',
-                  hintText: 'مثال: نقدي، تحويل بنكي، شيك',
+                  labelText: 'المورد',
                   border: OutlineInputBorder(),
                 ),
+                hint: const Text('اختر المورد'),
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedPartyId = newValue;
+                    _selectedPartyName = _suppliers.firstWhere((s) => s.id == newValue).name;
+                  });
+                },
+                items: _suppliers.map((supplier) {
+                  return DropdownMenuItem(
+                    value: supplier.id,
+                    child: Text(supplier.name),
+                  );
+                }).toList(),
+              ),
+            if (_selectedPartyType == 'Other')
+              TextFormField(
+                initialValue: _selectedPartyName, // استخدم هذا لعرض الاسم إذا كان "آخر"
+                decoration: const InputDecoration(
+                  labelText: 'اسم الطرف الآخر',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPartyName = value;
+                    _selectedPartyId = null; // لا يوجد ID لـ "آخر"
+                  });
+                },
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'الرجاء إدخال طريقة الدفع/القبض';
+                  if (_selectedPartyType == 'Other' && (value == null || value.isEmpty)) {
+                    return 'الرجاء إدخال اسم الطرف الآخر';
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 30),
-
-              // زر الحفظ
-              ElevatedButton.icon(
-                onPressed: _saveVoucher,
-                icon: const Icon(Icons.save),
-                label: Text(widget.voucher == null ? 'حفظ السند' : 'تعديل السند'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  textStyle: const TextStyle(fontSize: 18),
-                ),
+            const SizedBox(height: 15),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'البيان/الوصف (اختياري)',
+                border: OutlineInputBorder(),
               ),
-            ],
-          ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _saveVoucher,
+              icon: const Icon(Icons.save),
+              label: const Text('حفظ السند'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _voucherNumberController.dispose();
+    _amountController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 }
