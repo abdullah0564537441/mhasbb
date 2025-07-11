@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:path_provider/path/path.dart'; // تأكد من أن هذا المسار صحيح، الأرجح هو 'package:path_provider/path_provider.dart'
 
 // استيراد الشاشات الرئيسية والتنقل
 import 'package:mhasbb/screens/home_screen.dart';
@@ -20,6 +20,8 @@ import 'package:mhasbb/screens/reports_screen.dart';
 import 'package:mhasbb/screens/vouchers_screen.dart';
 import 'package:mhasbb/screens/add_edit_voucher_screen.dart';
 import 'package:mhasbb/screens/add_edit_return_invoice_screen.dart'; // استيراد شاشة المرتجعات
+import 'package:mhasbb/screens/notes_screen.dart'; // ⭐⭐ استيراد شاشة الملاحظات (أضفناه في HomeScreen، وليس هنا)
+
 
 // استيراد موديلات Hive (فقط الملفات الأساسية، وليس ملفات الـ g.dart)
 import 'package:mhasbb/models/item.dart';
@@ -206,6 +208,7 @@ class _MyAppState extends State<MyApp> {
         '/vouchers': (context) => const VouchersScreen(),
         '/add_edit_voucher': (context) => const AddEditVoucherScreen(),
         '/add_edit_return_invoice': (context) => const AddEditReturnInvoiceScreen(),
+        '/notes': (context) => const NotesScreen(), // ⭐⭐ مسار شاشة الملاحظات
         '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
         '/settings': (context) => const PlaceholderScreen(title: 'الإعدادات'),
       },
