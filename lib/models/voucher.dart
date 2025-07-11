@@ -1,11 +1,11 @@
 // lib/models/voucher.dart
 import 'package:hive/hive.dart';
-import 'package:mhasbb/models/voucher_type.dart';
-import 'package:mhasbb/models/payment_method.dart';
+import 'package:mhasbb/models/voucher_type.dart'; // استيراد VoucherType
+import 'package:mhasbb/models/payment_method.dart'; // استيراد PaymentMethod
 
 part 'voucher.g.dart';
 
-@HiveType(typeId: 8) // تأكد أن الـ typeId فريد وغير مستخدم
+@HiveType(typeId: 8) // ⭐⭐ تأكد أن الـ typeId فريد وغير مستخدم ⭐⭐
 class Voucher extends HiveObject {
   @HiveField(0)
   late String id;
@@ -34,7 +34,7 @@ class Voucher extends HiveObject {
   @HiveField(8)
   String? partyType; // نوع الطرف (مثال: 'Customer', 'Supplier', 'Other')
 
-  @HiveField(9) // ⭐⭐ حقل جديد/معدل: وصف السند/البيان ⭐⭐
+  @HiveField(9) // ⭐⭐ تم إضافة هذا الحقل ⭐⭐
   String? description;
 
   Voucher({
@@ -47,6 +47,6 @@ class Voucher extends HiveObject {
     this.partyId,
     this.partyName,
     this.partyType,
-    this.description, // ⭐⭐ أضف هذا للكونستراكتور ⭐⭐
+    this.description, // ⭐⭐ تم إضافة هذا للكونستراكتور ⭐⭐
   });
 }
