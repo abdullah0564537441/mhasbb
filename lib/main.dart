@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path_provider/path/path.dart'; // تأكد من أن هذا المسار صحيح، الأرجح هو 'package:path_provider/path_provider.dart'
+import 'package:path_provider/path_provider.dart'; // تأكد من أن هذا هو الاستيراد الصحيح
 
 // استيراد الشاشات الرئيسية والتنقل
 import 'package:mhasbb/screens/home_screen.dart';
@@ -19,17 +19,18 @@ import 'package:mhasbb/screens/account_statement_screen.dart';
 import 'package:mhasbb/screens/reports_screen.dart';
 import 'package:mhasbb/screens/vouchers_screen.dart';
 import 'package:mhasbb/screens/add_edit_voucher_screen.dart';
-import 'package:mhasbb/screens/add_edit_return_invoice_screen.dart'; // استيراد شاشة المرتجعات
-import 'package:mhasbb/screens/notes_screen.dart'; // ⭐⭐ استيراد شاشة الملاحظات (أضفناه في HomeScreen، وليس هنا)
+import 'package:mhasbb/screens/add_edit_return_invoice_screen.dart';
+import 'package:mhasbb/screens/notes_screen.dart';
+// ⭐⭐ أضف استيراد شاشة الآلة الحاسبة هنا
+import 'package:mhasbb/screens/calculator_screen.dart';
 
 
-// استيراد موديلات Hive (فقط الملفات الأساسية، وليس ملفات الـ g.dart)
+// استيراد موديلات Hive
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/invoice_item.dart';
-import 'package:mhasbb/models/invoice.dart'; // **هذا الملف الآن يحتوي على InvoiceType**
+import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/supplier.dart';
-// ⭐⭐ تم حذف هذا السطر: import 'package:mhasbb/models/invoice_type.dart';
 import 'package:mhasbb/models/voucher.dart';
 import 'package:mhasbb/models/voucher_type.dart';
 import 'package:mhasbb/models/payment_method.dart';
@@ -71,18 +72,15 @@ void main() async {
     Hive.init(appDocumentDir.path);
 
     // تسجيل جميع محولات (adapters) Hive لموديلات البيانات
-    // تأكد أن ترتيب الـ typeId فريد لكل Adapter
-    // ⭐⭐ InvoiceTypeAdapter يُستورد الآن من invoice.dart
-    Hive.registerAdapter(InvoiceTypeAdapter()); // typeId: 1 (حسب تعريفها في invoice.dart)
-    Hive.registerAdapter(ItemAdapter()); // typeId: 0
-    Hive.registerAdapter(CustomerAdapter()); // typeId: 6
-    Hive.registerAdapter(InvoiceItemAdapter()); // typeId: 2
-    Hive.registerAdapter(InvoiceAdapter()); // typeId: 3
-    Hive.registerAdapter(SupplierAdapter()); // typeId: 4
-    Hive.registerAdapter(VoucherTypeAdapter()); // typeId: 7
-    Hive.registerAdapter(VoucherAdapter()); // typeId: 8
-    Hive.registerAdapter(PaymentMethodAdapter()); // typeId: 9 (حسب تعريفها في payment_method.dart)
-
+    Hive.registerAdapter(InvoiceTypeAdapter());
+    Hive.registerAdapter(ItemAdapter());
+    Hive.registerAdapter(CustomerAdapter());
+    Hive.registerAdapter(InvoiceItemAdapter());
+    Hive.registerAdapter(InvoiceAdapter());
+    Hive.registerAdapter(SupplierAdapter());
+    Hive.registerAdapter(VoucherTypeAdapter());
+    Hive.registerAdapter(VoucherAdapter());
+    Hive.registerAdapter(PaymentMethodAdapter());
 
     // فتح جميع صناديق Hive (Boxes)
     await Hive.openBox<Item>('items_box');
@@ -208,7 +206,8 @@ class _MyAppState extends State<MyApp> {
         '/vouchers': (context) => const VouchersScreen(),
         '/add_edit_voucher': (context) => const AddEditVoucherScreen(),
         '/add_edit_return_invoice': (context) => const AddEditReturnInvoiceScreen(),
-        '/notes': (context) => const NotesScreen(), // ⭐⭐ مسار شاشة الملاحظات
+        '/notes': (context) => const NotesScreen(),
+        '/calculator': (context) => const CalculatorScreen(), // ⭐⭐ مسار شاشة الآلة الحاسبة
         '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
         '/settings': (context) => const PlaceholderScreen(title: 'الإعدادات'),
       },
