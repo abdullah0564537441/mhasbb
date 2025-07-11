@@ -19,6 +19,9 @@ import 'package:mhasbb/screens/account_statement_screen.dart';
 import 'package:mhasbb/screens/reports_screen.dart';
 import 'package:mhasbb/screens/vouchers_screen.dart';
 import 'package:mhasbb/screens/add_edit_voucher_screen.dart';
+// ⭐⭐ إضافة استيراد شاشة المرتجعات الجديدة
+import 'package:mhasbb/screens/add_edit_return_invoice_screen.dart';
+
 
 // استيراد موديلات Hive (فقط الملفات الأساسية، وليس ملفات الـ g.dart)
 import 'package:mhasbb/models/item.dart';
@@ -29,7 +32,7 @@ import 'package:mhasbb/models/supplier.dart';
 import 'package:mhasbb/models/invoice_type.dart';
 import 'package:mhasbb/models/voucher.dart';
 import 'package:mhasbb/models/voucher_type.dart';
-import 'package:mhasbb/models/payment_method.dart'; // ⭐⭐ أضف هذا السطر لاستيراد نموذج طريقة الدفع
+import 'package:mhasbb/models/payment_method.dart';
 
 // ---
 late SharedPreferences prefs;
@@ -69,7 +72,7 @@ void main() async {
 
     // تسجيل جميع محولات (adapters) Hive لموديلات البيانات
     // تأكد أن ترتيب الـ typeId فريد لكل Adapter
-    Hive.registerAdapter(InvoiceTypeAdapter()); // typeId: 5
+    Hive.registerAdapter(InvoiceTypeAdapter()); // typeId: 1 (تم تصحيحه بناءً على invoice.dart)
     Hive.registerAdapter(ItemAdapter()); // typeId: 0
     Hive.registerAdapter(CustomerAdapter()); // typeId: 6
     Hive.registerAdapter(InvoiceItemAdapter()); // typeId: 2
@@ -77,7 +80,7 @@ void main() async {
     Hive.registerAdapter(SupplierAdapter()); // typeId: 4
     Hive.registerAdapter(VoucherTypeAdapter()); // typeId: 7
     Hive.registerAdapter(VoucherAdapter()); // typeId: 8
-    Hive.registerAdapter(PaymentMethodAdapter()); // ⭐⭐ أضف هذا السطر لتسجيل محول طريقة الدفع
+    Hive.registerAdapter(PaymentMethodAdapter()); // typeId: 9 (تم تصحيحه بناءً على payment_method.dart)
 
 
     // فتح جميع صناديق Hive (Boxes)
@@ -203,6 +206,7 @@ class _MyAppState extends State<MyApp> {
         '/reports': (context) => const ReportsScreen(),
         '/vouchers': (context) => const VouchersScreen(),
         '/add_edit_voucher': (context) => const AddEditVoucherScreen(),
+        '/add_edit_return_invoice': (context) => const AddEditReturnInvoiceScreen(), // ⭐⭐ إضافة مسار شاشة المرتجعات
         '/tax': (context) => const PlaceholderScreen(title: 'الضريبة'),
         '/settings': (context) => const PlaceholderScreen(title: 'الإعدادات'),
       },
