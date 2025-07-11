@@ -1,12 +1,12 @@
+// lib/screens/add_edit_item_screen.dart
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:uuid/uuid.dart'; // لتوليد معرفات فريدة
+import 'package:uuid/uuid.dart';
 
-// استيراد موديل الصنف (Item)
 import 'package:mhasbb/models/item.dart';
 
 class AddEditItemScreen extends StatefulWidget {
-  final Item? item; // الصنف الذي سيتم تعديله (يمكن أن يكون null للإضافة)
+  final Item? item;
 
   const AddEditItemScreen({super.key, this.item});
 
@@ -15,93 +15,61 @@ class AddEditItemScreen extends StatefulWidget {
 }
 
 class _AddEditItemScreenState extends State<AddEditItemScreen> {
-  final _formKey = GlobalKey<FormState>(); // مفتاح للتحقق من صحة النموذج
-
-  // المتحكمات (Controllers) لحقول الإدخال
-  late TextEditingController _itemNameController;
-  late TextEditingController _quantityController;
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
   late TextEditingController _unitController;
   late TextEditingController _purchasePriceController;
-  late TextEditingController _sellingPriceController;
-
-  late Box<Item> itemsBox; // صندوق Hive الخاص بالأصناف
-  final Uuid uuid = const Uuid(); // لتوليد معرفات فريدة
+  late TextEditingController _salePriceController;
+  late TextEditingController _currentStockController; // ⭐⭐ تم تغيير الاسم هنا ⭐⭐
 
   @override
   void initState() {
     super.initState();
-    itemsBox = Hive.box<Item>('items_box');
-
-    // تهيئة المتحكمات بناءً على ما إذا كنا نضيف صنفًا جديدًا أو نعدل صنفًا موجودًا
-    if (widget.item == null) {
-      // وضع افتراضيات لصنف جديد
-      _itemNameController = TextEditingController();
-      _quantityController = TextEditingController(text: '0'); // كمية افتراضية
-      _unitController = TextEditingController(text: 'قطعة'); // وحدة افتراضية
-      _purchasePriceController = TextEditingController(text: '0.0'); // سعر شراء افتراضي
-      _sellingPriceController = TextEditingController(text: '0.0'); // سعر بيع افتراضي
-    } else {
-      // تحميل بيانات الصنف الموجودة للتعديل
-      _itemNameController = TextEditingController(text: widget.item!.name);
-      _quantityController = TextEditingController(text: widget.item!.quantity.toString());
-      _unitController = TextEditingController(text: widget.item!.unit);
-      _purchasePriceController = TextEditingController(text: widget.item!.purchasePrice.toString());
-      _sellingPriceController = TextEditingController(text: widget.item!.sellingPrice.toString());
-    }
+    _nameController = TextEditingController(text: widget.item?.name ?? '');
+    _unitController = TextEditingController(text: widget.item?.unit ?? '');
+    _purchasePriceController = TextEditingController(text: widget.item?.purchasePrice.toString() ?? '0.0');
+    _salePriceController = TextEditingController(text: widget.item?.salePrice.toString() ?? '0.0');
+    _currentStockController = TextEditingController(text: widget.item?.currentStock.toString() ?? '0.0'); // ⭐⭐ تم التصحيح هنا ⭐⭐
   }
 
-  @override
-  void dispose() {
-    _itemNameController.dispose();
-    _quantityController.dispose();
-    _unitController.dispose();
-    _purchasePriceController.dispose();
-    _sellingPriceController.dispose();
-    super.dispose();
-  }
-
-  // دالة لحفظ الصنف
   Future<void> _saveItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      final String name = _itemNameController.text.trim();
-      final double quantity = double.tryParse(_quantityController.text) ?? 0.0;
-      final String unit = _unitController.text.trim();
-      final double purchasePrice = double.tryParse(_purchasePriceController.text) ?? 0.0;
-      final double sellingPrice = double.tryParse(_sellingPriceController.text) ?? 0.0;
+      final name = _nameController.text;
+      final unit = _unitController.text;
+      final purchasePrice = double.tryParse(_purchasePriceController.text) ?? 0.0;
+      final salePrice = double.tryParse(_salePriceController.text) ?? 0.0;
+      final currentStock = double.tryParse(_currentStockController.text) ?? 0.0; // ⭐⭐ تم التصحيح هنا ⭐⭐
 
-      if (name.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('اسم الصنف لا يمكن أن يكون فارغًا.')),
-        );
-        return;
-      }
-
-      // إنشاء كائن Item
-      final newItem = Item(
-        id: widget.item?.id ?? uuid.v4(), // استخدم ID الموجود أو أنشئ واحدًا جديدًا
-        name: name,
-        quantity: quantity,
-        unit: unit,
-        purchasePrice: purchasePrice,
-        sellingPrice: sellingPrice,
-      );
+      final itemBox = Hive.box<Item>('items_box');
 
       if (widget.item == null) {
         // إضافة صنف جديد
-        await itemsBox.put(newItem.id, newItem); // استخدام ID الصنف كمفتاح
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إضافة الصنف بنجاح!')),
+        final newItem = Item(
+          id: const Uuid().v4(),
+          name: name,
+          unit: unit,
+          purchasePrice: purchasePrice,
+          salePrice: salePrice,
+          currentStock: currentStock, // ⭐⭐ تم التصحيح هنا ⭐⭐
         );
+        await itemBox.put(newItem.id, newItem);
       } else {
-        // تحديث صنف موجود
-        await itemsBox.put(widget.item!.key, newItem); // استخدام مفتاح الصنف الأصلي للتحديث
+        // تعديل صنف موجود
+        widget.item!.name = name;
+        widget.item!.unit = unit;
+        widget.item!.purchasePrice = purchasePrice;
+        widget.item!.salePrice = salePrice;
+        widget.item!.currentStock = currentStock; // ⭐⭐ تم التصحيح هنا ⭐⭐
+        await widget.item!.save();
+      }
+      if (mounted) {
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم تحديث الصنف بنجاح!')),
+          SnackBar(content: Text('تم حفظ الصنف "${_nameController.text}" بنجاح')),
         );
       }
-      Navigator.of(context).pop(); // العودة إلى شاشة المخزون
     }
   }
 
@@ -112,19 +80,17 @@ class _AddEditItemScreenState extends State<AddEditItemScreen> {
         title: Text(widget.item == null ? 'إضافة صنف جديد' : 'تعديل صنف'),
         centerTitle: true,
       ),
-      body: Form(
-        key: _formKey,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
           child: ListView(
             children: [
-              // حقل اسم الصنف
               TextFormField(
-                controller: _itemNameController,
-                decoration: InputDecoration(
+                controller: _nameController,
+                decoration: const InputDecoration(
                   labelText: 'اسم الصنف',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  hintText: 'أدخل اسم الصنف',
+                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -133,98 +99,72 @@ class _AddEditItemScreenState extends State<AddEditItemScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-
-              // حقل الكمية
-              TextFormField(
-                controller: _quantityController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'الكمية',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  hintText: 'أدخل الكمية',
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'الرجاء إدخال الكمية';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'الرجاء إدخال رقم صحيح للكمية';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // حقل الوحدة
+              const SizedBox(height: 15),
               TextFormField(
                 controller: _unitController,
-                decoration: InputDecoration(
-                  labelText: 'الوحدة (مثال: قطعة، كجم)',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  hintText: 'أدخل وحدة القياس',
+                decoration: const InputDecoration(
+                  labelText: 'وحدة القياس (مثال: كرتون, حبة, متر)',
+                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'الرجاء إدخال الوحدة';
+                    return 'الرجاء إدخال وحدة القياس';
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-
-              // حقل سعر الشراء
+              const SizedBox(height: 15),
               TextFormField(
                 controller: _purchasePriceController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'سعر الشراء',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  hintText: 'أدخل سعر الشراء',
+                  border: OutlineInputBorder(),
                 ),
+                keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'الرجاء إدخال سعر الشراء';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'الرجاء إدخال رقم صحيح لسعر الشراء';
+                  if (value == null || double.tryParse(value) == null || double.parse(value) < 0) {
+                    return 'الرجاء إدخال سعر شراء صحيح';
                   }
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
-
-              // حقل سعر البيع
+              const SizedBox(height: 15),
               TextFormField(
-                controller: _sellingPriceController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
+                controller: _salePriceController,
+                decoration: const InputDecoration(
                   labelText: 'سعر البيع',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  hintText: 'أدخل سعر البيع',
+                  border: OutlineInputBorder(),
                 ),
+                keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'الرجاء إدخال سعر البيع';
+                  if (value == null || double.tryParse(value) == null || double.parse(value) < 0) {
+                    return 'الرجاء إدخال سعر بيع صحيح';
                   }
-                  if (double.tryParse(value) == null) {
-                    return 'الرجاء إدخال رقم صحيح لسعر البيع';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 15),
+              TextFormField(
+                controller: _currentStockController,
+                decoration: const InputDecoration(
+                  labelText: 'الكمية الحالية في المخزون',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || double.tryParse(value) == null) {
+                    return 'الرجاء إدخال كمية صحيحة';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 30),
-
-              // زر حفظ الصنف
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: _saveItem,
+                icon: const Icon(Icons.save),
+                label: const Text('حفظ الصنف'),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: Text(
-                  widget.item == null ? 'حفظ الصنف' : 'تحديث الصنف',
-                  style: const TextStyle(fontSize: 18),
+                  minimumSize: const Size.fromHeight(50),
                 ),
               ),
             ],
@@ -232,5 +172,15 @@ class _AddEditItemScreenState extends State<AddEditItemScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _unitController.dispose();
+    _purchasePriceController.dispose();
+    _salePriceController.dispose();
+    _currentStockController.dispose();
+    super.dispose();
   }
 }
