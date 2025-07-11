@@ -3,16 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:mhasbb/screens/calculator_screen.dart';
 import 'package:mhasbb/screens/reports_screen.dart';
 
-// ⭐⭐ تم تصحيح الاستيرادات بناءً على أن أسماء الملفات تبدأ بحرف صغير ⭐⭐
+// ⭐⭐ هذه هي الاستيرادات الصحيحة بناءً على أن كل ملفاتك تبدأ بحرف صغير
+// وكلمة 'statement' صحيحة إملائياً في account_statement_screen.dart ⭐⭐
 import 'package:mhasbb/screens/sales_invoices_screen.dart';
 import 'package:mhasbb/screens/purchase_invoices_screen.dart';
 import 'package:mhasbb/screens/inventory_screen.dart';
-import 'package:mhasbb/screens/account_statenment_screen.dart'; // تصحيح: 'a' صغيرة
-import 'package:mhasbb/screens/customers_screen.dart';          // تصحيح: 'c' صغيرة
-import 'package:mhasbb/screens/suppliers_screen.dart';          // تصحيح: 's' صغيرة
-import 'package:mhasbb/screens/returns_screen.dart';            // تصحيح: 'r' صغيرة
+import 'package:mhasbb/screens/account_statement_screen.dart'; // ⭐⭐ تم تصحيح الإملاء هنا ⭐⭐
+import 'package:mhasbb/screens/customers_screen.dart';          // كل الأحرف صغيرة
+import 'package:mhasbb/screens/suppliers_screen.dart';          // كل الأحرف صغيرة
+import 'package:mhasbb/screens/returns_screen.dart';            // كل الأحرف صغيرة
 import 'package:mhasbb/screens/vouchers_screen.dart';
-import 'package:mhasbb/screens/notes_screen.dart';              // تصحيح: 'n' صغيرة
+import 'package:mhasbb/screens/notes_screen.dart';              // كل الأحرف صغيرة
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -30,8 +31,9 @@ class HomeScreen extends StatelessWidget {
         screen = const InventoryScreen();
         break;
       case 'الحسابات':
-        // اسم الكلاس نفسه يجب أن يبقى بحرف كبير (PascalCase) حتى لو كان اسم الملف بحرف صغير
-        screen = const AccountStatenmentScreen();
+        // اسم الكلاس نفسه داخل الملف عادة ما يبدأ بحرف كبير (PascalCase)
+        // لذا، حتى لو كان اسم الملف account_statement_screen.dart، الكلاس داخله سيكون AccountStatementScreen
+        screen = const AccountStatementScreen();
         break;
       case 'العملاء':
         screen = const CustomersScreen();
