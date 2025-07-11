@@ -8,7 +8,7 @@ import 'package:mhasbb/screens/reports_screen.dart';
 import 'package:mhasbb/screens/sales_screen.dart';       // افترض هذا هو اسم شاشتك الأصلية للمبيعات
 import 'package:mhasbb/screens/purchases_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للمشتريات
 import 'package:mhasbb/screens/inventory_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للمخزون
-import 'package:mhasbb/screens/accounts_screen.dart';     // افترض هذا هو اسم شاشتك الأصلية للحسابات
+// import 'package:mhasbb/screens/accounts_screen.dart';     // ⭐⭐ تم حذف هذا الاستيراد: لا توجد شاشة للحسابات
 import 'package:mhasbb/screens/customers_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للعملاء
 import 'package:mhasbb/screens/suppliers_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للموردين
 import 'package:mhasbb/screens/returns_screen.dart';      // افترض هذا هو اسم شاشتك الأصلية للمرتجعات
@@ -29,14 +29,15 @@ class HomeScreen extends StatelessWidget {
       case 'المخزون':
         screen = const InventoryScreen(); // ⭐⭐ استبدل بـ InventoryScreen() أو اسم شاشتك الفعلية
         break;
-      case 'الحسابات':
-        screen = const AccountsScreen(); // ⭐⭐ استبدل بـ AccountsScreen() أو اسم شاشتك الفعلية
-        break;
+      // case 'الحسابات': // ⭐⭐ تم حذف هذه الحالة: لا توجد شاشة للحسابات
+      //   screen = const AccountsScreen();
+      //   break;
       case 'العملاء':
         screen = const CustomersScreen(); // ⭐⭐ استبدل بـ CustomersScreen() أو اسم شاشتك الفعلية
         break;
       case 'الموردين':
         screen = const SuppliersScreen(); // ⭐⭐ استبدل بـ SuppliersScreen() أو اسم شاشتك الفعلية
+        break; // ⭐⭐ إضافة break; هنا للحالة السابقة 'الموردين' (كان مفقودًا)
       case 'المرتجعات':
         screen = const ReturnsScreen(); // ⭐⭐ استبدل بـ ReturnsScreen() أو اسم شاشتك الفعلية
         break;
@@ -50,8 +51,7 @@ class HomeScreen extends StatelessWidget {
         screen = const CalculatorScreen(); // هذا صحيح، هو CalculatorScreen
         break;
       default:
-        // إذا كان لديك شاشة افتراضية أخرى، ضعها هنا، أو قم بإزالة هذه الحالة إذا لم تعد بحاجة إليها
-        screen = const Center(child: Text('الشاشة غير متوفرة!')); // رسالة افتراضية
+        screen = const Center(child: Text('الشاشة غير متوفرة!'));
     }
     Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
   }
@@ -73,7 +73,7 @@ class HomeScreen extends StatelessWidget {
             _buildCategoryCard(context, 'المبيعات', Icons.shopping_cart),
             _buildCategoryCard(context, 'المشتريات', Icons.shopping_basket),
             _buildCategoryCard(context, 'المخزون', Icons.inventory),
-            _buildCategoryCard(context, 'الحسابات', Icons.account_balance),
+            // _buildCategoryCard(context, 'الحسابات', Icons.account_balance), // ⭐⭐ تم حذف هذه البطاقة: لا توجد شاشة للحسابات
             _buildCategoryCard(context, 'العملاء', Icons.people),
             _buildCategoryCard(context, 'الموردين', Icons.local_shipping),
             _buildCategoryCard(context, 'المرتجعات', Icons.assignment_return),
