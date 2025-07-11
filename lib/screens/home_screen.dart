@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:mhasbb/screens/calculator_screen.dart';
 import 'package:mhasbb/screens/reports_screen.dart';
 
-// ⭐⭐ يجب عليك استيراد شاشاتك الأصلية هنا ⭐⭐
-// أمثلة:
-import 'package:mhasbb/screens/sales_screen.dart';       // افترض هذا هو اسم شاشتك الأصلية للمبيعات
-import 'package:mhasbb/screens/purchases_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للمشتريات
-import 'package:mhasbb/screens/inventory_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للمخزون
-// import 'package:mhasbb/screens/accounts_screen.dart';     // ⭐⭐ تم حذف هذا الاستيراد: لا توجد شاشة للحسابات
-import 'package:mhasbb/screens/customers_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للعملاء
-import 'package:mhasbb/screens/suppliers_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للموردين
-import 'package:mhasbb/screens/returns_screen.dart';      // افترض هذا هو اسم شاشتك الأصلية للمرتجعات
-import 'package:mhasbb/screens/vouchers_screen.dart';     // افترض هذا هو اسم شاشتك الأصلية للسندات
+// ⭐⭐ تم تصحيح الاستيرادات بناءً على أن أسماء الملفات تبدأ بحرف صغير ⭐⭐
+import 'package:mhasbb/screens/sales_invoices_screen.dart';
+import 'package:mhasbb/screens/purchase_invoices_screen.dart';
+import 'package:mhasbb/screens/inventory_screen.dart';
+import 'package:mhasbb/screens/account_statenment_screen.dart'; // تصحيح: 'a' صغيرة
+import 'package:mhasbb/screens/customers_screen.dart';          // تصحيح: 'c' صغيرة
+import 'package:mhasbb/screens/suppliers_screen.dart';          // تصحيح: 's' صغيرة
+import 'package:mhasbb/screens/returns_screen.dart';            // تصحيح: 'r' صغيرة
+import 'package:mhasbb/screens/vouchers_screen.dart';
+import 'package:mhasbb/screens/notes_screen.dart';              // تصحيح: 'n' صغيرة
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -21,34 +21,38 @@ class HomeScreen extends StatelessWidget {
     Widget screen;
     switch (sectionName) {
       case 'المبيعات':
-        screen = const SalesScreen(); // ⭐⭐ استبدل بـ SalesScreen() أو اسم شاشتك الفعلية
+        screen = const SalesInvoicesScreen();
         break;
       case 'المشتريات':
-        screen = const PurchasesScreen(); // ⭐⭐ استبدل بـ PurchasesScreen() أو اسم شاشتك الفعلية
+        screen = const PurchaseInvoicesScreen();
         break;
       case 'المخزون':
-        screen = const InventoryScreen(); // ⭐⭐ استبدل بـ InventoryScreen() أو اسم شاشتك الفعلية
+        screen = const InventoryScreen();
         break;
-      // case 'الحسابات': // ⭐⭐ تم حذف هذه الحالة: لا توجد شاشة للحسابات
-      //   screen = const AccountsScreen();
-      //   break;
+      case 'الحسابات':
+        // اسم الكلاس نفسه يجب أن يبقى بحرف كبير (PascalCase) حتى لو كان اسم الملف بحرف صغير
+        screen = const AccountStatenmentScreen();
+        break;
       case 'العملاء':
-        screen = const CustomersScreen(); // ⭐⭐ استبدل بـ CustomersScreen() أو اسم شاشتك الفعلية
+        screen = const CustomersScreen();
         break;
       case 'الموردين':
-        screen = const SuppliersScreen(); // ⭐⭐ استبدل بـ SuppliersScreen() أو اسم شاشتك الفعلية
-        break; // ⭐⭐ إضافة break; هنا للحالة السابقة 'الموردين' (كان مفقودًا)
+        screen = const SuppliersScreen();
+        break;
       case 'المرتجعات':
-        screen = const ReturnsScreen(); // ⭐⭐ استبدل بـ ReturnsScreen() أو اسم شاشتك الفعلية
+        screen = const ReturnsScreen();
         break;
       case 'سندات الصرف والقبض':
-        screen = const VouchersScreen(); // ⭐⭐ استبدل بـ VouchersScreen() أو اسم شاشتك الفعلية
+        screen = const VouchersScreen();
         break;
       case 'التقارير':
-        screen = const ReportsScreen(); // هذا صحيح، هو ReportScreen
+        screen = const ReportsScreen();
         break;
       case 'الآلة الحاسبة':
-        screen = const CalculatorScreen(); // هذا صحيح، هو CalculatorScreen
+        screen = const CalculatorScreen();
+        break;
+      case 'الملاحظات':
+        screen = const NotesScreen();
         break;
       default:
         screen = const Center(child: Text('الشاشة غير متوفرة!'));
@@ -73,13 +77,14 @@ class HomeScreen extends StatelessWidget {
             _buildCategoryCard(context, 'المبيعات', Icons.shopping_cart),
             _buildCategoryCard(context, 'المشتريات', Icons.shopping_basket),
             _buildCategoryCard(context, 'المخزون', Icons.inventory),
-            // _buildCategoryCard(context, 'الحسابات', Icons.account_balance), // ⭐⭐ تم حذف هذه البطاقة: لا توجد شاشة للحسابات
+            _buildCategoryCard(context, 'الحسابات', Icons.account_balance),
             _buildCategoryCard(context, 'العملاء', Icons.people),
             _buildCategoryCard(context, 'الموردين', Icons.local_shipping),
             _buildCategoryCard(context, 'المرتجعات', Icons.assignment_return),
             _buildCategoryCard(context, 'سندات الصرف والقبض', Icons.receipt_long),
             _buildCategoryCard(context, 'التقارير', Icons.assessment),
             _buildCategoryCard(context, 'الآلة الحاسبة', Icons.calculate),
+            _buildCategoryCard(context, 'الملاحظات', Icons.notes),
           ],
         ),
       ),
