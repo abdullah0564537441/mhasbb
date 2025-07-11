@@ -1,34 +1,34 @@
 // lib/models/item.dart
 import 'package:hive/hive.dart';
 
-part 'item.g.dart'; // تأكد أن هذا السطر موجود لتوليد الكود الخاص بـ Hive
+part 'item.g.dart';
 
-@HiveType(typeId: 0) // ⭐ تأكد أن الـ typeId هذا فريد لكل موديل (0 للأصناف)
+@HiveType(typeId: 0)
 class Item extends HiveObject {
   @HiveField(0)
-  final String id; // معرف فريد للصنف (مثلاً UUID)، يبقى final لأنه معرف ثابت
+  late String id;
 
   @HiveField(1)
-  String name; // اسم الصنف
+  late String name;
 
   @HiveField(2)
-  double quantity; // الكمية المتوفرة في المخزون (غير final للسماح بالتعديل)
+  late String unit;
 
   @HiveField(3)
-  String unit; // وحدة القياس (مثال: قطعة، كجم) (غير final للسماح بالتعديل)
+  late double purchasePrice; // ⭐⭐ تم إضافة هذا الحقل ⭐⭐
 
   @HiveField(4)
-  double purchasePrice; // سعر الشراء (غير final للسماح بالتعديل)
+  late double salePrice;     // ⭐⭐ تم إضافة هذا الحقل ⭐⭐
 
   @HiveField(5)
-  double sellingPrice; // سعر البيع (غير final للسماح بالتعديل)
+  late double currentStock;
 
   Item({
     required this.id,
     required this.name,
-    required this.quantity,
     required this.unit,
-    required this.purchasePrice,
-    required this.sellingPrice,
+    required this.purchasePrice, // ⭐⭐ تم إضافة هذا للكونستراكتور ⭐⭐
+    required this.salePrice,     // ⭐⭐ تم إضافة هذا للكونستراكتور ⭐⭐
+    this.currentStock = 0.0,
   });
 }
