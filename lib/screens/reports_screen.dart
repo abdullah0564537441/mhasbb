@@ -1,13 +1,15 @@
 // lib/screens/reports_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // ⭐⭐ تم إضافة هذا الاستيراد
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:mhasbb/models/invoice.dart';
-import 'package:mhasbb/models/invoice_item.dart'; // قد لا تحتاجها هنا مباشرة ولكنها ضرورية للفواتير
+import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/item.dart';
-import 'package:mhasbb/models/voucher.dart'; // ⭐⭐ استيراد موديل السندات
-import 'package:mhasbb/models/return_invoice.dart'; // ⭐⭐ استيراد موديل المرتجعات (افترض وجوده)
-import 'package:mhasbb/models/voucher_type.dart'; // لاستخدام VoucherType
+import 'package:mhasbb/models/voucher.dart';
+import 'package:mhasbb/models/return_invoice.dart';
+import 'package:mhasbb/models/voucher_type.dart';
+import 'package:mhasbb/screens/placeholder_screen.dart'; // ⭐⭐ تم إضافة هذا الاستيراد
 
 // ⭐⭐ تحديث enum ReportType
 enum ReportType { sales, purchases, inventory, returns, vouchers }
@@ -26,15 +28,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   late Box<Invoice> invoicesBox;
   late Box<Item> itemsBox;
-  late Box<ReturnInvoice> returnsBox; // ⭐⭐ صندوق المرتجعات
-  late Box<Voucher> vouchersBox; // ⭐⭐ صندوق السندات
+  late Box<ReturnInvoice> returnsBox;
+  late Box<Voucher> vouchersBox;
 
   @override
   void initState() {
     super.initState();
     invoicesBox = Hive.box<Invoice>('invoices_box');
     itemsBox = Hive.box<Item>('items_box');
-    returnsBox = Hive.box<ReturnInvoice>('return_invoices_box'); // ⭐⭐ افتراض اسم الصندوق
+    returnsBox = Hive.box<ReturnInvoice>('return_invoices_box');
     vouchersBox = Hive.box<Voucher>('vouchers_box');
   }
 
@@ -308,7 +310,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('رقم فاتورة المرتجع: ${returnsInvoice.invoiceNumber}',
+                        Text('رقم فاتورة المرتجع: ${returnsInvoice.returnNumber}', // ⭐⭐ تم التعديل هنا
                             style: Theme.of(context).textTheme.titleMedium),
                         Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(returnsInvoice.date)}'),
                         Text('العميل/المورد: ${returnsInvoice.customerName ?? returnsInvoice.supplierName ?? 'غير محدد'}'),
@@ -328,8 +330,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     // ⭐⭐ واجهة تقرير السندات
     else if (_selectedReportType == ReportType.vouchers) {
       final vouchers = _generateVouchersReport();
-      double totalReceipts = vouchers.where((v) => v.type == VoucherType.receipt).fold(0.0, (sum, v) => sum + v.amount);
-      double totalPayments = vouchers.where((v) => v.type == VoucherType.payment).fold(0.0, (sum, v) => sum + v.amount);
+      double totalReceipts = vouchers.where((v) => v.type == VoucherType.income).fold(0.0, (sum, v) => sum + v.amount); // ⭐⭐ تم التعديل هنا
+      double totalPayments = vouchers.where((v) => v.type == VoucherType.expense).fold(0.0, (sum, v) => sum + v.amount); // ⭐⭐ تم التعديل هنا
       double netBalance = totalReceipts - totalPayments;
 
       if (vouchers.isEmpty) {
@@ -376,11 +378,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         Text('رقم السند: ${voucher.voucherNumber}',
                             style: Theme.of(context).textTheme.titleMedium),
                         Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(voucher.date)}'),
-                        Text('النوع: ${voucher.type == VoucherType.receipt ? 'قبض' : 'صرف'}',
-                            style: TextStyle(color: voucher.type == VoucherType.receipt ? Colors.green : Colors.red)),
+                        Text('النوع: ${voucher.type == VoucherType.income ? 'قبض' : 'صرف'}', // ⭐⭐ تم التعديل هنا
+                            style: TextStyle(color: voucher.type == VoucherType.income ? Colors.green : Colors.red)), // ⭐⭐ تم التعديل هنا
                         Text('المبلغ: ${numberFormat.format(voucher.amount)}',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                        Text('البيان: ${voucher.description ?? 'لا يوجد'}'),
+                        Text('البيان: ${voucher.description}', // تم إزالة ?? 'لا يوجد' لتجنب مشاكل إذا كان nullable في الموديل
+                            style: Theme.of(context).textTheme.titleSmall),
                       ],
                     ),
                   ),
@@ -418,7 +421,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       _selectedReportType = newValue!;
                     });
                   },
-                  // ⭐⭐ تحديث قائمة العناصر المتاحة في القائمة المنسدلة
                   items: const [
                     DropdownMenuItem(
                       value: ReportType.sales,
@@ -433,17 +435,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       child: Text('تقرير المخزون'),
                     ),
                     DropdownMenuItem(
-                      value: ReportType.returns, // ⭐⭐ خيار تقرير المرتجعات
+                      value: ReportType.returns,
                       child: Text('تقرير المرتجعات'),
                     ),
                     DropdownMenuItem(
-                      value: ReportType.vouchers, // ⭐⭐ خيار تقرير السندات
+                      value: ReportType.vouchers,
                       child: Text('تقرير السندات'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                // إظهار محددات التاريخ إلا لتقرير المخزون
                 if (_selectedReportType != ReportType.inventory)
                   Row(
                     children: [
@@ -477,7 +478,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 const SizedBox(height: 10),
                 ElevatedButton(
                   onPressed: () {
-                    setState(() {}); // ببساطة نقوم بإعادة بناء الواجهة لتحديث البيانات
+                    setState(() {});
                   },
                   child: const Text('تحديث التقرير'),
                 ),
@@ -486,7 +487,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           const Divider(),
           Expanded(
-            // ⭐⭐ تحديث ValueListenableBuilder للاستماع للصندوق الصحيح بناءً على نوع التقرير
             child: ValueListenableBuilder<Box>(
               valueListenable: _getSelectedBoxListenables(),
               builder: (context, box, _) {
@@ -499,7 +499,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  // ⭐⭐ دالة مساعدة لتحديد الصندوق الذي يجب الاستماع إليه
+  // دالة مساعدة لتحديد الصندوق الذي يجب الاستماع إليه
   ValueListenable _getSelectedBoxListenables() {
     switch (_selectedReportType) {
       case ReportType.sales:
@@ -512,7 +512,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       case ReportType.vouchers:
         return vouchersBox.listenable();
       default:
-        return invoicesBox.listenable(); // افتراضي
+        return invoicesBox.listenable();
     }
   }
 }
