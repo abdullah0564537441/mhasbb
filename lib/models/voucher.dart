@@ -1,38 +1,41 @@
 // lib/models/voucher.dart
 import 'package:hive/hive.dart';
-import 'package:mhasbb/models/voucher_type.dart'; // استيراد الـ enum الجديد
+import 'package:mhasbb/models/voucher_type.dart'; // استيراد VoucherType
+import 'package:mhasbb/models/payment_method.dart'; // استيراد PaymentMethod
 
 part 'voucher.g.dart';
 
-@HiveType(typeId: 8) // تأكد من أن هذا الـ typeId فريد
+@HiveType(typeId: 8) // ⭐⭐ تأكد أن الـ typeId فريد وغير مستخدم ⭐⭐
 class Voucher extends HiveObject {
   @HiveField(0)
-  final String id; // معرف فريد للسند (UUID)
+  late String id;
 
   @HiveField(1)
-  String voucherNumber; // رقم السند
+  late String voucherNumber;
 
   @HiveField(2)
-  VoucherType type; // نوع السند (صرف/قبض)
+  late VoucherType type; // قبض أو صرف
 
   @HiveField(3)
-  DateTime date; // تاريخ السند
+  late DateTime date;
 
   @HiveField(4)
-  double amount; // المبلغ الكلي للسند
+  late double amount;
 
   @HiveField(5)
-  String description; // وصف أو بيان السند
+  late PaymentMethod paymentMethod; // طريقة الدفع/القبض
 
-  // الحساب المرتبط بالسند (مثلاً عميل، مورد، مصروف، إيراد)
-  // يمكننا استخدام معرف ونوع لربطه بكيانات أخرى
   @HiveField(6)
-  String? relatedPartyId; // معرف الطرف المرتبط (اختياري)
+  String? partyId; // معرف العميل أو المورد أو أي طرف آخر
+
   @HiveField(7)
-  String? relatedPartyName; // اسم الطرف المرتبط (للتسهيل في العرض)
+  String? partyName; // اسم العميل أو المورد أو الطرف
 
   @HiveField(8)
-  String paymentMethod; // طريقة الدفع/القبض (نقدي، بنكي، شيك)
+  String? partyType; // نوع الطرف (مثال: 'Customer', 'Supplier', 'Other')
+
+  @HiveField(9)
+  String? notes;
 
   Voucher({
     required this.id,
@@ -40,9 +43,10 @@ class Voucher extends HiveObject {
     required this.type,
     required this.date,
     required this.amount,
-    required this.description,
-    this.relatedPartyId,
-    this.relatedPartyName,
     required this.paymentMethod,
+    this.partyId,
+    this.partyName,
+    this.partyType,
+    this.notes,
   });
 }
