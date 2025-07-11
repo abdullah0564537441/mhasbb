@@ -21,7 +21,7 @@ class Invoice extends HiveObject {
   late DateTime date;
 
   @HiveField(4)
-  late List<InvoiceItem> items;
+  late HiveList<InvoiceItem> items; // ⭐⭐ تم التعديل إلى HiveList ⭐⭐
 
   @HiveField(5)
   String? customerId;
@@ -41,8 +41,11 @@ class Invoice extends HiveObject {
   @HiveField(10)
   String? originalInvoiceId;
 
-  @HiveField(11) // ⭐⭐ تم إضافة هذا الحقل ⭐⭐
+  @HiveField(11)
   late double totalAmount;
+
+  @HiveField(12) // ⭐⭐ تم إضافة هذا الحقل ⭐⭐
+  String? notes;
 
   Invoice({
     required this.id,
@@ -56,6 +59,7 @@ class Invoice extends HiveObject {
     this.supplierName,
     this.paymentMethod = PaymentMethod.cash,
     this.originalInvoiceId,
-    required this.totalAmount, // ⭐⭐ يجب أن يكون مطلوبًا ⭐⭐
+    required this.totalAmount,
+    this.notes, // ⭐⭐ تم إضافة هذا للكونستراكتور ⭐⭐
   });
 }
