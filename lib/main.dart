@@ -17,6 +17,7 @@ import 'package:mhasbb/models/voucher.dart';
 import 'package:mhasbb/models/voucher_type.dart';
 import 'package:mhasbb/models/return_invoice.dart';
 import 'package:mhasbb/models/payment_method.dart';
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ أضف هذا السطر ⭐⭐
 
 // متغير عام لـ SharedPreferences (إذا كنت تستخدمه)
 late SharedPreferences prefs;
