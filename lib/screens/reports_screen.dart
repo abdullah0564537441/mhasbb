@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 
+// استيراد الموديلات الضرورية
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/return_invoice.dart';
 import 'package:mhasbb/models/voucher.dart';
 import 'package:mhasbb/models/invoice_type.dart';
 import 'package:mhasbb/models/voucher_type.dart';
+import 'package:mhasbb/models/payment_method.dart'; // ⭐⭐ تم إضافة هذا الاستيراد هنا ⭐⭐
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -439,8 +441,8 @@ class _VoucherReportsTabState extends State<_VoucherReportsTab> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(voucher.date)}'),
-                                  Text('البيان: ${voucher.description ?? 'لا يوجد بيان'}'), // ⭐⭐ تم التصحيح هنا ⭐⭐
-                                  if (voucher.partyName != null && voucher.partyName!.isNotEmpty) // ⭐⭐ تم التصحيح هنا ⭐⭐
+                                  Text('البيان: ${voucher.description ?? 'لا يوجد بيان'}'),
+                                  if (voucher.partyName != null && voucher.partyName!.isNotEmpty)
                                     Text('الطرف: ${voucher.partyName}'),
                                   Text('طريقة الدفع: ${voucher.paymentMethod == PaymentMethod.cash ? 'نقدي' : 'شيك/تحويل'}'),
                                 ],
