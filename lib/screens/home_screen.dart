@@ -2,7 +2,17 @@
 import 'package:flutter/material.dart';
 import 'package:mhasbb/screens/calculator_screen.dart';
 import 'package:mhasbb/screens/reports_screen.dart';
-import 'package:mhasbb/screens/placeholder_screen.dart'; // ⭐⭐ تم إضافة هذا الاستيراد
+
+// ⭐⭐ يجب عليك استيراد شاشاتك الأصلية هنا ⭐⭐
+// أمثلة:
+import 'package:mhasbb/screens/sales_screen.dart';       // افترض هذا هو اسم شاشتك الأصلية للمبيعات
+import 'package:mhasbb/screens/purchases_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للمشتريات
+import 'package:mhasbb/screens/inventory_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للمخزون
+import 'package:mhasbb/screens/accounts_screen.dart';     // افترض هذا هو اسم شاشتك الأصلية للحسابات
+import 'package:mhasbb/screens/customers_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للعملاء
+import 'package:mhasbb/screens/suppliers_screen.dart';    // افترض هذا هو اسم شاشتك الأصلية للموردين
+import 'package:mhasbb/screens/returns_screen.dart';      // افترض هذا هو اسم شاشتك الأصلية للمرتجعات
+import 'package:mhasbb/screens/vouchers_screen.dart';     // افترض هذا هو اسم شاشتك الأصلية للسندات
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -11,36 +21,37 @@ class HomeScreen extends StatelessWidget {
     Widget screen;
     switch (sectionName) {
       case 'المبيعات':
-        screen = const PlaceholderScreen(title: 'شاشة المبيعات'); // استبدل بشاشة المبيعات الحقيقية
+        screen = const SalesScreen(); // ⭐⭐ استبدل بـ SalesScreen() أو اسم شاشتك الفعلية
         break;
       case 'المشتريات':
-        screen = const PlaceholderScreen(title: 'شاشة المشتريات'); // استبدل بشاشة المشتريات الحقيقية
+        screen = const PurchasesScreen(); // ⭐⭐ استبدل بـ PurchasesScreen() أو اسم شاشتك الفعلية
         break;
       case 'المخزون':
-        screen = const PlaceholderScreen(title: 'شاشة المخزون'); // استبدل بشاشة المخزون الحقيقية
+        screen = const InventoryScreen(); // ⭐⭐ استبدل بـ InventoryScreen() أو اسم شاشتك الفعلية
         break;
       case 'الحسابات':
-        screen = const PlaceholderScreen(title: 'شاشة الحسابات'); // استبدل بشاشة الحسابات الحقيقية
+        screen = const AccountsScreen(); // ⭐⭐ استبدل بـ AccountsScreen() أو اسم شاشتك الفعلية
         break;
       case 'العملاء':
-        screen = const PlaceholderScreen(title: 'شاشة العملاء'); // استبدل بشاشة العملاء الحقيقية
+        screen = const CustomersScreen(); // ⭐⭐ استبدل بـ CustomersScreen() أو اسم شاشتك الفعلية
         break;
       case 'الموردين':
-        screen = const PlaceholderScreen(title: 'شاشة الموردين'); // استبدل بشاشة الموردين الحقيقية
-        case 'المرتجعات':
-        screen = const PlaceholderScreen(title: 'شاشة المرتجعات'); // استبدل بشاشة المرتجعات الحقيقية
+        screen = const SuppliersScreen(); // ⭐⭐ استبدل بـ SuppliersScreen() أو اسم شاشتك الفعلية
+      case 'المرتجعات':
+        screen = const ReturnsScreen(); // ⭐⭐ استبدل بـ ReturnsScreen() أو اسم شاشتك الفعلية
         break;
       case 'سندات الصرف والقبض':
-        screen = const PlaceholderScreen(title: 'شاشة سندات الصرف والقبض'); // استبدل بشاشة السندات الحقيقية
+        screen = const VouchersScreen(); // ⭐⭐ استبدل بـ VouchersScreen() أو اسم شاشتك الفعلية
         break;
       case 'التقارير':
-        screen = const ReportsScreen();
+        screen = const ReportsScreen(); // هذا صحيح، هو ReportScreen
         break;
       case 'الآلة الحاسبة':
-        screen = const CalculatorScreen();
+        screen = const CalculatorScreen(); // هذا صحيح، هو CalculatorScreen
         break;
       default:
-        screen = PlaceholderScreen(title: sectionName);
+        // إذا كان لديك شاشة افتراضية أخرى، ضعها هنا، أو قم بإزالة هذه الحالة إذا لم تعد بحاجة إليها
+        screen = const Center(child: Text('الشاشة غير متوفرة!')); // رسالة افتراضية
     }
     Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
   }
