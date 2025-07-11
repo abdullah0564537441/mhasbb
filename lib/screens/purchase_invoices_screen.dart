@@ -4,8 +4,9 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 
 import 'package:mhasbb/models/invoice.dart';
-import 'package:mhasbb/models/invoice_type.dart'; // ⭐ أضف هذا السطر ⭐
-import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart'; // تأكد من وجوده
+import 'package:mhasbb/models/invoice_type.dart';
+import 'package:mhasbb/models/payment_method.dart';
+import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart';
 
 class PurchaseInvoicesScreen extends StatefulWidget {
   const PurchaseInvoicesScreen({super.key});
@@ -15,41 +16,7 @@ class PurchaseInvoicesScreen extends StatefulWidget {
 }
 
 class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
-  late Box<Invoice> invoicesBox;
-
-  @override
-  void initState() {
-    super.initState();
-    invoicesBox = Hive.box<Invoice>('invoices_box');
-  }
-
-  Future<void> _deleteInvoice(Invoice invoice) async {
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: Text('هل أنت متأكد أنك تريد حذف فاتورة رقم ${invoice.invoiceNumber}؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('حذف'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await invoice.delete();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم حذف الفاتورة بنجاح!')),
-      );
-    }
-  }
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -57,83 +24,132 @@ class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
       appBar: AppBar(
         title: const Text('فواتير المشتريات'),
         centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60.0),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'البحث برقم الفاتورة أو اسم المورد',
+                prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                fillColor: Colors.white24,
+                filled: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  borderSide: BorderSide.none,
+                ),
+                hintStyle: const TextStyle(color: Colors.white70),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+              ),
+              style: const TextStyle(color: Colors.white),
+              cursorColor: Colors.white,
+            ),
+          ),
+        ),
       ),
-      body: ValueListenableBuilder<Box<Invoice>>(
-        valueListenable: invoicesBox.listenable(),
-        builder: (context, box, _) {
-          final purchaseInvoices = box.values
-              .where((invoice) => invoice.type == InvoiceType.purchase) // ⭐ استخدام InvoiceType.purchase
-              .toList()
-              .cast<Invoice>();
+      body: ValueListenableBuilder(
+        valueListenable: Hive.box<Invoice>('invoices_box').listenable(),
+        builder: (context, Box<Invoice> box, _) {
+          final allPurchaseInvoices = box.values
+              .where((invoice) => invoice.type == InvoiceType.purchase)
+              .toList();
 
-          if (purchaseInvoices.isEmpty) {
-            return const Center(
-              child: Text('لا توجد فواتير مشتريات حتى الآن.'),
+          final filteredInvoices = allPurchaseInvoices.where((invoice) {
+            final invoiceNumberLower = invoice.invoiceNumber.toLowerCase();
+            final supplierNameLower = invoice.supplierName?.toLowerCase() ?? '';
+            return invoiceNumberLower.contains(_searchQuery) ||
+                   supplierNameLower.contains(_searchQuery);
+          }).toList();
+
+          if (filteredInvoices.isEmpty) {
+            return Center(
+              child: Text(
+                _searchQuery.isEmpty
+                    ? 'لا توجد فواتير مشتريات مسجلة حتى الآن.'
+                    : 'لا توجد فواتير مشتريات مطابقة لبحثك.',
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
+              ),
             );
           }
 
+          filteredInvoices.sort((a, b) => b.date.compareTo(a.date));
+
           return ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: purchaseInvoices.length,
+            padding: const EdgeInsets.all(8.0),
+            itemCount: filteredInvoices.length,
             itemBuilder: (context, index) {
-              final invoice = purchaseInvoices[index];
-              final total = invoice.items.fold(0.0, (sum, item) => sum + (item.quantity * item.purchasePrice));
-              final numberFormat = NumberFormat('#,##0.00', 'en_US');
+              final invoice = filteredInvoices[index];
+              final total = invoice.items.fold(0.0, (sum, item) => sum + (item.quantity * item.price)); // ⭐⭐ تم التصحيح هنا ⭐⭐
+              final numberFormat = NumberFormat.currency(symbol: '', decimalDigits: 2);
 
               return Card(
-                margin: const EdgeInsets.symmetric(vertical: 8.0),
-                elevation: 4.0,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'رقم الفاتورة: ${invoice.invoiceNumber}',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'التاريخ: ${DateFormat('yyyy-MM-dd').format(invoice.date)}',
-                      ),
-                      Text(
-                        'المورد: ${invoice.supplierName ?? 'غير محدد'}',
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'بنود الفاتورة:',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      ...invoice.items.map((item) => Text(
-                            '${item.itemName} (${item.quantity} ${item.unit} x ${numberFormat.format(item.purchasePrice)})',
-                          )).toList(),
-                      const Divider(height: 24),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'الإجمالي الكلي: ${numberFormat.format(total)}',
-                          style: Theme.of(context).textTheme.titleLarge,
+                elevation: 4,
+                margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: InkWell(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddEditPurchaseInvoiceScreen(
+                          invoice: invoice,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (context) => AddEditPurchaseInvoiceScreen(invoice: invoice)),
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deleteInvoice(invoice),
-                          ),
-                        ],
-                      ),
-                    ],
+                    );
+                    setState(() {});
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'فاتورة رقم: ${invoice.invoiceNumber}',
+                              style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).primaryColor),
+                            ),
+                            Text(
+                              DateFormat('yyyy-MM-dd').format(invoice.date),
+                              style: const TextStyle(fontSize: 14, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text('المورد: ${invoice.supplierName ?? 'غير محدد'}'),
+                        Text('طريقة الدفع: ${invoice.paymentMethod == PaymentMethod.cash ? 'نقدي' : 'آجل'}'),
+                        if (invoice.notes != null && invoice.notes!.isNotEmpty)
+                          Text('ملاحظات: ${invoice.notes!}'),
+                        const SizedBox(height: 8),
+                        const Text('الأصناف:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ...invoice.items.map((item) => Text(
+                              '${item.itemName} (${item.quantity} ${item.unit} x ${numberFormat.format(item.price)})', // ⭐⭐ تم التصحيح هنا ⭐⭐
+                              style: const TextStyle(fontSize: 14),
+                            )).toList(),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'الإجمالي: ${numberFormat.format(total)}',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                _confirmDeleteInvoice(context, invoice);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -141,14 +157,46 @@ class _PurchaseInvoicesScreenState extends State<PurchaseInvoicesScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const AddEditPurchaseInvoiceScreen(invoice: null)),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddEditPurchaseInvoiceScreen(),
+            ),
           );
+          setState(() {});
         },
-        label: const Text('إضافة فاتورة شراء'),
-        icon: const Icon(Icons.add),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _confirmDeleteInvoice(BuildContext context, Invoice invoice) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف فاتورة المشتريات'),
+        content: Text('هل أنت متأكد أنك تريد حذف فاتورة المشتريات رقم ${invoice.invoiceNumber}؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await invoice.delete();
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم حذف الفاتورة بنجاح')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('حذف'),
+          ),
+        ],
       ),
     );
   }
