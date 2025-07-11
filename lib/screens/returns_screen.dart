@@ -1,11 +1,11 @@
 // lib/screens/returns_screen.dart
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart'; // لاستخدام ValueListenableBuilder
-import 'package:intl/intl.dart'; // لتنسيق التاريخ والأرقام
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart';
 
-import 'package:mhasbb/models/return_invoice.dart'; // استيراد موديل المرتجع
-import 'package:mhasbb/screens/add_edit_return_invoice_screen.dart'; // استيراد شاشة الإضافة/التعديل
-import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ مهم: استيراد InvoiceType ⭐⭐
+import 'package:mhasbb/models/return_invoice.dart';
+import 'package:mhasbb/screens/add_edit_return_invoice_screen.dart';
+import 'package:mhasbb/models/invoice_type.dart';
 
 class ReturnsScreen extends StatefulWidget {
   const ReturnsScreen({super.key});
@@ -15,7 +15,6 @@ class ReturnsScreen extends StatefulWidget {
 }
 
 class _ReturnsScreenState extends State<ReturnsScreen> {
-  // للبحث
   String _searchQuery = '';
 
   @override
@@ -57,7 +56,6 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
         builder: (context, Box<ReturnInvoice> box, _) {
           final allReturns = box.values.toList();
 
-          // تصفية المرتجعات بناءً على البحث
           final filteredReturns = allReturns.where((ret) {
             final returnNumberLower = ret.returnNumber.toLowerCase();
             final customerNameLower = ret.customerName?.toLowerCase() ?? '';
@@ -79,7 +77,6 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
             );
           }
 
-          // فرز المرتجعات من الأحدث إلى الأقدم
           filteredReturns.sort((a, b) => b.date.compareTo(a.date));
 
           return ListView.builder(
@@ -87,7 +84,6 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
             itemCount: filteredReturns.length,
             itemBuilder: (context, index) {
               final returnInvoice = filteredReturns[index];
-              // ⭐⭐ تم التأكد من وجود InvoiceType هنا ⭐⭐
               final isSalesReturn = returnInvoice.originalInvoiceType == InvoiceType.salesReturn;
               final partyName = isSalesReturn ? returnInvoice.customerName : returnInvoice.supplierName;
               final returnTypeLabel = isSalesReturn ? 'مرتجع مبيعات' : 'مرتجع مشتريات';
@@ -98,16 +94,15 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: InkWell(
                   onTap: () async {
-                    // للتعديل على مرتجع موجود
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => AddEditReturnInvoiceScreen(
-                          returnInvoice: returnInvoice, // ⭐⭐ تم التأكد من تمرير ReturnInvoice ⭐⭐
+                          returnInvoice: returnInvoice,
                         ),
                       ),
                     );
-                    setState(() {}); // لتحديث القائمة بعد التعديل
+                    setState(() {});
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -160,21 +155,19 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // للانتقال إلى شاشة إضافة مرتجع جديد
           await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => const AddEditReturnInvoiceScreen(),
             ),
           );
-          setState(() {}); // لتحديث القائمة بعد إضافة مرتجع جديد
+          setState(() {});
         },
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  // دالة لتأكيد الحذف
   void _confirmDeleteReturn(BuildContext context, ReturnInvoice returnInvoice) {
     showDialog(
       context: context,
@@ -188,9 +181,9 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await returnInvoice.delete(); // حذف المرتجع من Hive
+              await returnInvoice.delete();
               if (mounted) {
-                Navigator.pop(context); // إغلاق مربع الحوار
+                Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('تم حذف المرتجع بنجاح')),
                 );
