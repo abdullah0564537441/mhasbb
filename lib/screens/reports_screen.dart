@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:mhasbb/models/invoice.dart';
-import 'package:mhasbb/models/invoice_item.dart';
+import 'package:mhasbb/models/invoice_item.dart'; // قد لا تحتاجها هنا مباشرة ولكنها ضرورية للفواتير
 import 'package:mhasbb/models/item.dart';
+import 'package:mhasbb/models/voucher.dart'; // ⭐⭐ استيراد موديل السندات
+import 'package:mhasbb/models/return_invoice.dart'; // ⭐⭐ استيراد موديل المرتجعات (افترض وجوده)
+import 'package:mhasbb/models/voucher_type.dart'; // لاستخدام VoucherType
 
-enum ReportType { sales, purchases, inventory }
+// ⭐⭐ تحديث enum ReportType
+enum ReportType { sales, purchases, inventory, returns, vouchers }
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -22,12 +26,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   late Box<Invoice> invoicesBox;
   late Box<Item> itemsBox;
+  late Box<ReturnInvoice> returnsBox; // ⭐⭐ صندوق المرتجعات
+  late Box<Voucher> vouchersBox; // ⭐⭐ صندوق السندات
 
   @override
   void initState() {
     super.initState();
     invoicesBox = Hive.box<Invoice>('invoices_box');
     itemsBox = Hive.box<Item>('items_box');
+    returnsBox = Hive.box<ReturnInvoice>('return_invoices_box'); // ⭐⭐ افتراض اسم الصندوق
+    vouchersBox = Hive.box<Voucher>('vouchers_box');
   }
 
   // --- دوال اختيار التاريخ ---
@@ -81,9 +89,30 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   // --- تقرير المخزون ---
   List<Item> _generateInventoryReport() {
-    // تقرير المخزون ببساطة يعرض جميع الأصناف من صندوق الأصناف
     return itemsBox.values.toList().cast<Item>()
       ..sort((a, b) => a.name.compareTo(b.name));
+  }
+
+  // ⭐⭐ تقرير المرتجعات
+  List<ReturnInvoice> _generateReturnsReport() {
+    return returnsBox.values
+        .where((returnsInvoice) =>
+            returnsInvoice.date.isAfter(_startDate.subtract(const Duration(days: 1))) &&
+            returnsInvoice.date.isBefore(_endDate.add(const Duration(days: 1))))
+        .toList()
+        .cast<ReturnInvoice>()
+      ..sort((a, b) => a.date.compareTo(b.date));
+  }
+
+  // ⭐⭐ تقرير السندات (صرف وقبض)
+  List<Voucher> _generateVouchersReport() {
+    return vouchersBox.values
+        .where((voucher) =>
+            voucher.date.isAfter(_startDate.subtract(const Duration(days: 1))) &&
+            voucher.date.isBefore(_endDate.add(const Duration(days: 1))))
+        .toList()
+        .cast<Voucher>()
+      ..sort((a, b) => a.date.compareTo(b.date));
   }
 
   // --- بناء واجهة عرض التقرير المختار ---
@@ -148,7 +177,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           0.0,
           (sum, invoice) => sum +
               invoice.items.fold(
-                  0.0, (itemSum, item) => itemSum + (item.quantity * item.purchasePrice))); // استخدام purchasePrice هنا
+                  0.0, (itemSum, item) => itemSum + (item.quantity * item.purchasePrice)));
 
       if (purchaseInvoices.isEmpty) {
         return const Center(child: Text('لا توجد مشتريات في الفترة المحددة.'));
@@ -196,9 +225,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
       );
     } else if (_selectedReportType == ReportType.inventory) {
       final inventoryItems = _generateInventoryReport();
-      // حساب القيمة الإجمالية للمخزون
       double totalInventoryValue = inventoryItems.fold(
-          0.0, (sum, item) => sum + (item.quantity * item.purchasePrice)); // استخدام purchasePrice لتقييم المخزون
+          0.0, (sum, item) => sum + (item.quantity * item.purchasePrice));
 
       if (inventoryItems.isEmpty) {
         return const Center(child: Text('المخزون فارغ.'));
@@ -243,6 +271,126 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ],
       );
     }
+    // ⭐⭐ واجهة تقرير المرتجعات
+    else if (_selectedReportType == ReportType.returns) {
+      final returnsInvoices = _generateReturnsReport();
+      double totalReturnsValue = returnsInvoices.fold(
+          0.0,
+          (sum, returnInvoice) => sum +
+              returnInvoice.items.fold(
+                  0.0, (itemSum, item) => itemSum + (item.quantity * item.sellingPrice))); // افترض استخدام sellingPrice للمرتجعات
+
+      if (returnsInvoices.isEmpty) {
+        return const Center(child: Text('لا توجد مرتجعات في الفترة المحددة.'));
+      }
+
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'إجمالي قيمة المرتجعات: ${numberFormat.format(totalReturnsValue)}',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.orange),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: returnsInvoices.length,
+              itemBuilder: (context, index) {
+                final returnsInvoice = returnsInvoices[index];
+                final invoiceTotal = returnsInvoice.items.fold(
+                    0.0, (sum, item) => sum + (item.quantity * item.sellingPrice)); // تأكد من الحساب الصحيح
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  elevation: 4.0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('رقم فاتورة المرتجع: ${returnsInvoice.invoiceNumber}',
+                            style: Theme.of(context).textTheme.titleMedium),
+                        Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(returnsInvoice.date)}'),
+                        Text('العميل/المورد: ${returnsInvoice.customerName ?? returnsInvoice.supplierName ?? 'غير محدد'}'),
+                        const SizedBox(height: 5),
+                        Text('الإجمالي: ${numberFormat.format(invoiceTotal)}',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+    // ⭐⭐ واجهة تقرير السندات
+    else if (_selectedReportType == ReportType.vouchers) {
+      final vouchers = _generateVouchersReport();
+      double totalReceipts = vouchers.where((v) => v.type == VoucherType.receipt).fold(0.0, (sum, v) => sum + v.amount);
+      double totalPayments = vouchers.where((v) => v.type == VoucherType.payment).fold(0.0, (sum, v) => sum + v.amount);
+      double netBalance = totalReceipts - totalPayments;
+
+      if (vouchers.isEmpty) {
+        return const Center(child: Text('لا توجد سندات في الفترة المحددة.'));
+      }
+
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Text(
+                  'إجمالي سندات القبض: ${numberFormat.format(totalReceipts)}',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.green),
+                ),
+                Text(
+                  'إجمالي سندات الصرف: ${numberFormat.format(totalPayments)}',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.red),
+                ),
+                Text(
+                  'الرصيد الصافي: ${numberFormat.format(netBalance)}',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: netBalance >= 0 ? Colors.blue : Colors.deepOrange,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: vouchers.length,
+              itemBuilder: (context, index) {
+                final voucher = vouchers[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  elevation: 4.0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('رقم السند: ${voucher.voucherNumber}',
+                            style: Theme.of(context).textTheme.titleMedium),
+                        Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(voucher.date)}'),
+                        Text('النوع: ${voucher.type == VoucherType.receipt ? 'قبض' : 'صرف'}',
+                            style: TextStyle(color: voucher.type == VoucherType.receipt ? Colors.green : Colors.red)),
+                        Text('المبلغ: ${numberFormat.format(voucher.amount)}',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        Text('البيان: ${voucher.description ?? 'لا يوجد'}'),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
     return const Center(child: Text('اختر نوع التقرير لعرض البيانات.'));
   }
 
@@ -270,6 +418,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       _selectedReportType = newValue!;
                     });
                   },
+                  // ⭐⭐ تحديث قائمة العناصر المتاحة في القائمة المنسدلة
                   items: const [
                     DropdownMenuItem(
                       value: ReportType.sales,
@@ -283,9 +432,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       value: ReportType.inventory,
                       child: Text('تقرير المخزون'),
                     ),
+                    DropdownMenuItem(
+                      value: ReportType.returns, // ⭐⭐ خيار تقرير المرتجعات
+                      child: Text('تقرير المرتجعات'),
+                    ),
+                    DropdownMenuItem(
+                      value: ReportType.vouchers, // ⭐⭐ خيار تقرير السندات
+                      child: Text('تقرير السندات'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
+                // إظهار محددات التاريخ إلا لتقرير المخزون
                 if (_selectedReportType != ReportType.inventory)
                   Row(
                     children: [
@@ -319,8 +477,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 const SizedBox(height: 10),
                 ElevatedButton(
                   onPressed: () {
-                    // ببساطة نقوم بإعادة بناء الواجهة لتحديث البيانات بناءً على التواريخ المحددة
-                    setState(() {});
+                    setState(() {}); // ببساطة نقوم بإعادة بناء الواجهة لتحديث البيانات
                   },
                   child: const Text('تحديث التقرير'),
                 ),
@@ -329,10 +486,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           const Divider(),
           Expanded(
+            // ⭐⭐ تحديث ValueListenableBuilder للاستماع للصندوق الصحيح بناءً على نوع التقرير
             child: ValueListenableBuilder<Box>(
-              valueListenable: _selectedReportType == ReportType.inventory
-                  ? itemsBox.listenable()
-                  : invoicesBox.listenable(),
+              valueListenable: _getSelectedBoxListenables(),
               builder: (context, box, _) {
                 return _buildReportContent();
               },
@@ -341,5 +497,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ],
       ),
     );
+  }
+
+  // ⭐⭐ دالة مساعدة لتحديد الصندوق الذي يجب الاستماع إليه
+  ValueListenable _getSelectedBoxListenables() {
+    switch (_selectedReportType) {
+      case ReportType.sales:
+      case ReportType.purchases:
+        return invoicesBox.listenable();
+      case ReportType.inventory:
+        return itemsBox.listenable();
+      case ReportType.returns:
+        return returnsBox.listenable();
+      case ReportType.vouchers:
+        return vouchersBox.listenable();
+      default:
+        return invoicesBox.listenable(); // افتراضي
+    }
   }
 }
