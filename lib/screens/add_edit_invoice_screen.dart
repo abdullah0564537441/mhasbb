@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart'; // لتوليد معرفات فريدة
+import 'package:uuid/uuid.dart';
 
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/invoice_item.dart';
@@ -45,7 +45,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
       _selectedCustomerName = widget.invoice!.customerName;
       _selectedPaymentMethod = widget.invoice!.paymentMethod;
       _invoiceItems = List.from(widget.invoice!.items);
-      _notesController.text = widget.invoice!.notes ?? ''; // ⭐⭐ تم التصحيح هنا ⭐⭐
+      _notesController.text = widget.invoice!.notes ?? '';
     } else {
       _invoiceNumberController.text = 'INV-${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}';
     }
@@ -77,11 +77,12 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
   void _addItem() {
     setState(() {
       _invoiceItems.add(InvoiceItem(
-        id: const Uuid().v4(), // ⭐⭐ تم التصحيح هنا ⭐⭐
+        id: const Uuid().v4(),
         itemId: '',
         itemName: '',
         quantity: 1,
         price: 0.0,
+        unit: '', // ⭐⭐ تم إضافة هذا الحقل هنا ⭐⭐
       ));
     });
   }
@@ -110,7 +111,6 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
       // تحويل List<InvoiceItem> إلى HiveList<InvoiceItem>
       final HiveList<InvoiceItem> hiveInvoiceItems = HiveList<InvoiceItem>(invoiceBox)..addAll(_invoiceItems);
 
-
       if (widget.invoice == null) {
         // إضافة فاتورة جديدة
         final newInvoice = Invoice(
@@ -118,12 +118,12 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
           invoiceNumber: _invoiceNumberController.text,
           type: InvoiceType.sale,
           date: _selectedDate,
-          items: hiveInvoiceItems, // ⭐⭐ تم التصحيح هنا ⭐⭐
+          items: hiveInvoiceItems,
           customerId: _selectedCustomerId,
           customerName: _selectedCustomerName,
           paymentMethod: _selectedPaymentMethod,
           totalAmount: totalAmount,
-          notes: _notesController.text.isNotEmpty ? _notesController.text : null, // ⭐⭐ تم التصحيح هنا ⭐⭐
+          notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         );
         await invoiceBox.put(newInvoice.id, newInvoice);
       } else {
@@ -133,9 +133,9 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
         widget.invoice!.customerId = _selectedCustomerId;
         widget.invoice!.customerName = _selectedCustomerName;
         widget.invoice!.paymentMethod = _selectedPaymentMethod;
-        widget.invoice!.items = hiveInvoiceItems; // ⭐⭐ تم التصحيح هنا ⭐⭐
+        widget.invoice!.items = hiveInvoiceItems;
         widget.invoice!.totalAmount = totalAmount;
-        widget.invoice!.notes = _notesController.text.isNotEmpty ? _notesController.text : null; // ⭐⭐ تم التصحيح هنا ⭐⭐
+        widget.invoice!.notes = _notesController.text.isNotEmpty ? _notesController.text : null;
         await widget.invoice!.save();
       }
       if (mounted) {
@@ -257,7 +257,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                                 children: [
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
-                                      value: item.itemId.isEmpty ? null : item.itemId, // ⭐⭐ تم التصحيح هنا ⭐⭐
+                                      value: item.itemId.isEmpty ? null : item.itemId,
                                       decoration: const InputDecoration(
                                         labelText: 'الصنف',
                                         border: OutlineInputBorder(),
@@ -270,6 +270,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                                           item.itemId = newValue!;
                                           item.itemName = selectedItem.name;
                                           item.price = selectedItem.salePrice;
+                                          item.unit = selectedItem.unit; // ⭐⭐ تم إضافة هذا هنا ⭐⭐
                                         });
                                       },
                                       items: _availableItems.map((availableItem) {
