@@ -21,7 +21,7 @@ class ReturnInvoiceAdapter extends TypeAdapter<ReturnInvoice> {
       returnNumber: fields[1] as String,
       date: fields[2] as DateTime,
       originalInvoiceNumber: fields[3] as String?,
-      originalInvoiceType: fields[4] as InvoiceType?,
+      originalInvoiceType: fields[4] as InvalidType,
       customerName: fields[5] as String?,
       supplierName: fields[6] as String?,
       items: (fields[7] as HiveList).castHiveList(),
