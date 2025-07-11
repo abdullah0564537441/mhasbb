@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 
 import 'package:mhasbb/models/invoice.dart';
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐ أضف هذا السطر ⭐
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/supplier.dart'; // تأكد من استيراد المورد
