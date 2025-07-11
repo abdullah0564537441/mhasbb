@@ -2,13 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart'; // لتنسيق التاريخ والعملة
+
+// استيراد الموديلات الضرورية
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/return_invoice.dart';
 import 'package:mhasbb/models/voucher.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/supplier.dart';
-import 'package:mhasbb/models/invoice_type.dart';
-import 'package:mhasbb/models/voucher_type.dart';
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ مهم: استيراد InvoiceType من ملفه الخاص ⭐⭐
+import 'package:mhasbb/models/voucher_type.dart'; // ⭐⭐ مهم: استيراد VoucherType من ملفه الخاص ⭐⭐
 
 class AccountStatementScreen extends StatefulWidget {
   const AccountStatementScreen({super.key});
@@ -78,22 +80,22 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
         } else if (_selectedPartyType == 'Supplier' && invoice.type == InvoiceType.purchase && invoice.supplierId == _selectedPartyId) {
           matchesParty = true;
         } else if (_selectedPartyType == 'All' || _selectedPartyType == null) {
-          matchesParty = true; // إذا لم يتم تحديد طرف معين
+          matchesParty = true;
         }
 
         if (matchesParty &&
             ((_selectedPartyType == 'Customer' && invoice.type == InvoiceType.sale) ||
              (_selectedPartyType == 'Supplier' && invoice.type == InvoiceType.purchase) ||
-             _selectedPartyType == null || _selectedPartyType == 'All')) { // إضافة شرط التحقق من نوع الفاتورة عند تصفية 'الكل'
+             _selectedPartyType == null || _selectedPartyType == 'All')) {
           transactions.add({
             'date': invoice.date,
             'description': (invoice.type == InvoiceType.sale)
                 ? 'فاتورة مبيعات رقم ${invoice.invoiceNumber}'
                 : 'فاتورة مشتريات رقم ${invoice.invoiceNumber}',
             'type': (invoice.type == InvoiceType.sale) ? 'Sale' : 'Purchase',
-            'amount': invoice.totalAmount,
+            'amount': invoice.totalAmount, // ⭐⭐ تم التأكد من وجود totalAmount في Invoice ⭐⭐
             'partyName': (invoice.type == InvoiceType.sale) ? invoice.customerName : invoice.supplierName,
-            'isDebit': (invoice.type == InvoiceType.sale), // المبيعات دائنة (على العميل)، المشتريات مدينة (علينا)
+            'isDebit': (invoice.type == InvoiceType.purchase), // المشتريات مدينة (تزيد رصيدنا)، المبيعات دائنة (تقلل رصيدنا)
           });
         }
       }
@@ -105,18 +107,23 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
           (_endDate == null || returnInvoice.date.isBefore(_endDate!.add(const Duration(days: 1))))) {
 
         bool matchesParty = false;
-        if (_selectedPartyType == 'Customer' && returnInvoice.originalInvoiceType == InvoiceType.salesReturn && returnInvoice.customerName == _customers.firstWhere((c) => c.id == _selectedPartyId, orElse: () => Customer(id: '', name: '')).name) { // البحث بالاسم هنا
+        // يجب أن نتحقق من id بدلاً من الاسم إذا كان الـid متوفر
+        String? currentPartyId;
+        if (returnInvoice.originalInvoiceType == InvoiceType.salesReturn && returnInvoice.customerName != null) {
+          currentPartyId = _customers.firstWhere((c) => c.name == returnInvoice.customerName, orElse: () => Customer(id: '', name: '')).id;
+        } else if (returnInvoice.originalInvoiceType == InvoiceType.purchaseReturn && returnInvoice.supplierName != null) {
+          currentPartyId = _suppliers.firstWhere((s) => s.name == returnInvoice.supplierName, orElse: () => Supplier(id: '', name: '')).id;
+        }
+
+        if (_selectedPartyType == 'Customer' && returnInvoice.originalInvoiceType == InvoiceType.salesReturn && currentPartyId == _selectedPartyId) {
           matchesParty = true;
-        } else if (_selectedPartyType == 'Supplier' && returnInvoice.originalInvoiceType == InvoiceType.purchaseReturn && returnInvoice.supplierName == _suppliers.firstWhere((s) => s.id == _selectedPartyId, orElse: () => Supplier(id: '', name: '')).name) { // البحث بالاسم هنا
+        } else if (_selectedPartyType == 'Supplier' && returnInvoice.originalInvoiceType == InvoiceType.purchaseReturn && currentPartyId == _selectedPartyId) {
           matchesParty = true;
         } else if (_selectedPartyType == 'All' || _selectedPartyType == null) {
           matchesParty = true;
         }
 
-        if (matchesParty &&
-            ((_selectedPartyType == 'Customer' && returnInvoice.originalInvoiceType == InvoiceType.salesReturn) ||
-             (_selectedPartyType == 'Supplier' && returnInvoice.originalInvoiceType == InvoiceType.purchaseReturn) ||
-             _selectedPartyType == null || _selectedPartyType == 'All')) {
+        if (matchesParty) {
           transactions.add({
             'date': returnInvoice.date,
             'description': (returnInvoice.originalInvoiceType == InvoiceType.salesReturn)
@@ -125,7 +132,7 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
             'type': (returnInvoice.originalInvoiceType == InvoiceType.salesReturn) ? 'SalesReturn' : 'PurchaseReturn',
             'amount': returnInvoice.totalAmount,
             'partyName': (returnInvoice.originalInvoiceType == InvoiceType.salesReturn) ? returnInvoice.customerName : returnInvoice.supplierName,
-            'isDebit': (returnInvoice.originalInvoiceType == InvoiceType.purchaseReturn), // مرتجع المشتريات دائن (علينا)، مرتجع المبيعات مدين (للعميل)
+            'isDebit': (returnInvoice.originalInvoiceType == InvoiceType.salesReturn), // مرتجع المبيعات مدين (يزيد رصيدنا)، مرتجع المشتريات دائن (يقلل رصيدنا)
           });
         }
       }
@@ -138,9 +145,9 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
           (_endDate == null || voucher.date.isBefore(_endDate!.add(const Duration(days: 1))))) {
 
         bool matchesParty = false;
-        if (_selectedPartyType == 'Customer' && voucher.partyType == 'Customer' && voucher.partyId == _selectedPartyId) {
+        if (_selectedPartyType == 'Customer' && voucher.partyType == 'Customer' && voucher.partyId == _selectedPartyId) { // ⭐⭐ تم التأكد من وجود partyType, partyId في Voucher ⭐⭐
           matchesParty = true;
-        } else if (_selectedPartyType == 'Supplier' && voucher.partyType == 'Supplier' && voucher.partyId == _selectedPartyId) {
+        } else if (_selectedPartyType == 'Supplier' && voucher.partyType == 'Supplier' && voucher.partyId == _selectedPartyId) { // ⭐⭐ تم التأكد من وجود partyType, partyId في Voucher ⭐⭐
           matchesParty = true;
         } else if (_selectedPartyType == 'All' || _selectedPartyType == null) {
           matchesParty = true;
@@ -149,12 +156,12 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
         if (matchesParty) {
           transactions.add({
             'date': voucher.date,
-            'description': (voucher.type == VoucherType.receipt)
+            'description': (voucher.type == VoucherType.receipt) // ⭐⭐ تم التأكد من وجود VoucherType.receipt/payment ⭐⭐
                 ? 'سند قبض رقم ${voucher.voucherNumber}'
                 : 'سند صرف رقم ${voucher.voucherNumber}',
             'type': (voucher.type == VoucherType.receipt) ? 'Receipt' : 'Payment',
             'amount': voucher.amount,
-            'partyName': voucher.partyName,
+            'partyName': voucher.partyName, // ⭐⭐ تم التأكد من وجود partyName في Voucher ⭐⭐
             'isDebit': (voucher.type == VoucherType.payment), // سند الصرف مدين، سند القبض دائن
           });
         }
@@ -230,9 +237,9 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                       });
                     },
                     items: (_selectedPartyType == 'Customer' ? _customers : _suppliers)
-                        .map((party) => DropdownMenuItem(
-                              value: party.id,
-                              child: Text(party.name),
+                        .map<DropdownMenuItem<String>>((dynamic party) => DropdownMenuItem<String>( // ⭐⭐ هنا تم تصحيح الوصول لـ id و name ⭐⭐
+                              value: party.id as String,
+                              child: Text(party.name as String),
                             ))
                         .toList(),
                     decoration: InputDecoration(
