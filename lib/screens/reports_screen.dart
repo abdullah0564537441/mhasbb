@@ -5,7 +5,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/invoice_type.dart'; // ⭐ أضف هذا السطر ⭐
-
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/voucher.dart';
