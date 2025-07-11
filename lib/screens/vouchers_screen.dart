@@ -123,9 +123,9 @@ class _VouchersScreenState extends State<VouchersScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text('البيان: ${voucher.description ?? 'لا يوجد بيان'}'), // ⭐⭐ تم التصحيح هنا ⭐⭐
-                        if (voucher.partyName != null && voucher.partyName!.isNotEmpty) // ⭐⭐ تم التصحيح هنا ⭐⭐
-                          Text('الطرف: ${voucher.partyName}'), // ⭐⭐ تم التصحيح هنا ⭐⭐
+                        Text('البيان: ${voucher.description ?? 'لا يوجد بيان'}'),
+                        if (voucher.partyName != null && voucher.partyName!.isNotEmpty)
+                          Text('الطرف: ${voucher.partyName}'),
                         const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
