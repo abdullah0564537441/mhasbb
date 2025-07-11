@@ -15,20 +15,20 @@ class Item extends HiveObject {
   late String unit;
 
   @HiveField(3)
-  late double purchasePrice; // ⭐⭐ تم إضافة هذا الحقل ⭐⭐
+  late double purchasePrice;
 
   @HiveField(4)
-  late double salePrice;     // ⭐⭐ تم إضافة هذا الحقل ⭐⭐
+  late double salePrice;
 
   @HiveField(5)
-  late double currentStock;
+  late double currentStock; // ⭐⭐ تم تغيير الاسم إلى currentStock إذا كان قد تم تغييره سابقا ⭐⭐
 
   Item({
     required this.id,
     required this.name,
     required this.unit,
-    required this.purchasePrice, // ⭐⭐ تم إضافة هذا للكونستراكتور ⭐⭐
-    required this.salePrice,     // ⭐⭐ تم إضافة هذا للكونستراكتور ⭐⭐
-    this.currentStock = 0.0,
+    required this.purchasePrice,
+    required this.salePrice,
+    this.currentStock = 0.0, // ⭐⭐ تم تغيير الاسم هنا ⭐⭐
   });
 }
