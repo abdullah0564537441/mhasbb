@@ -9,7 +9,7 @@ import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/voucher.dart';
 import 'package:mhasbb/models/return_invoice.dart';
 import 'package:mhasbb/models/voucher_type.dart';
-import 'package:mhasbb/screens/placeholder_screen.dart';
+// import 'package:mhasbb/screens/placeholder_screen.dart'; // ⭐⭐ تم إزالة هذا الاستيراد
 
 enum ReportType { sales, purchases, inventory, returns, vouchers }
 
@@ -403,8 +403,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         title: const Text('التقارير'),
         centerTitle: true,
       ),
-      body: Column( // ⭐⭐ تأكد من هذا القوس المفتوح
-        children: [ // ⭐⭐ وتأكد من هذا القوس المفتوح
+      body: Column(
+        children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -493,8 +493,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
               },
             ),
           ),
-        ], // ⭐⭐ وتأكد من هذا القوس المغلق
-      ), // ⭐⭐ وتأكد من هذا القوس المغلق
+        ],
+      ),
     );
   }
 
