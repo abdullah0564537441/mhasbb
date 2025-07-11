@@ -280,7 +280,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           0.0,
           (sum, returnInvoice) => sum +
               returnInvoice.items.fold(
-                  0.0, (itemSum, item) => itemSum + (item.quantity * item.sellingPrice))); // افترض استخدام sellingPrice للمرتجعات
+                  0.0, (itemSum, item) => itemSum + (item.quantity * item.sellingPrice)));
 
       if (returnsInvoices.isEmpty) {
         return const Center(child: Text('لا توجد مرتجعات في الفترة المحددة.'));
@@ -301,7 +301,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               itemBuilder: (context, index) {
                 final returnsInvoice = returnsInvoices[index];
                 final invoiceTotal = returnsInvoice.items.fold(
-                    0.0, (sum, item) => sum + (item.quantity * item.sellingPrice)); // تأكد من الحساب الصحيح
+                    0.0, (sum, item) => sum + (item.quantity * item.sellingPrice));
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   elevation: 4.0,
@@ -310,7 +310,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('رقم فاتورة المرتجع: ${returnsInvoice.returnNumber}', // ⭐⭐ تم التعديل هنا
+                        Text('رقم فاتورة المرتجع: ${returnsInvoice.returnNumber}', // تم التعديل هنا
                             style: Theme.of(context).textTheme.titleMedium),
                         Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(returnsInvoice.date)}'),
                         Text('العميل/المورد: ${returnsInvoice.customerName ?? returnsInvoice.supplierName ?? 'غير محدد'}'),
@@ -330,8 +330,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     // ⭐⭐ واجهة تقرير السندات
     else if (_selectedReportType == ReportType.vouchers) {
       final vouchers = _generateVouchersReport();
-      double totalReceipts = vouchers.where((v) => v.type == VoucherType.income).fold(0.0, (sum, v) => sum + v.amount); // ⭐⭐ تم التعديل هنا
-      double totalPayments = vouchers.where((v) => v.type == VoucherType.expense).fold(0.0, (sum, v) => sum + v.amount); // ⭐⭐ تم التعديل هنا
+      double totalReceipts = vouchers.where((v) => v.type == VoucherType.income).fold(0.0, (sum, v) => sum + v.amount);
+      double totalPayments = vouchers.where((v) => v.type == VoucherType.expense).fold(0.0, (sum, v) => sum + v.amount);
       double netBalance = totalReceipts - totalPayments;
 
       if (vouchers.isEmpty) {
@@ -378,11 +378,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         Text('رقم السند: ${voucher.voucherNumber}',
                             style: Theme.of(context).textTheme.titleMedium),
                         Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(voucher.date)}'),
-                        Text('النوع: ${voucher.type == VoucherType.income ? 'قبض' : 'صرف'}', // ⭐⭐ تم التعديل هنا
-                            style: TextStyle(color: voucher.type == VoucherType.income ? Colors.green : Colors.red)), // ⭐⭐ تم التعديل هنا
+                        Text('النوع: ${voucher.type == VoucherType.income ? 'قبض' : 'صرف'}',
+                            style: TextStyle(color: voucher.type == VoucherType.income ? Colors.green : Colors.red)),
                         Text('المبلغ: ${numberFormat.format(voucher.amount)}',
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                        Text('البيان: ${voucher.description}', // تم إزالة ?? 'لا يوجد' لتجنب مشاكل إذا كان nullable في الموديل
+                        Text('البيان: ${voucher.description}',
                             style: Theme.of(context).textTheme.titleSmall),
                       ],
                     ),
@@ -408,111 +408,3 @@ class _ReportsScreenState extends State<ReportsScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                DropdownButtonFormField<ReportType>(
-                  decoration: const InputDecoration(
-                    labelText: 'اختر التقرير',
-                    border: OutlineInputBorder(),
-                  ),
-                  value: _selectedReportType,
-                  onChanged: (ReportType? newValue) {
-                    setState(() {
-                      _selectedReportType = newValue!;
-                    });
-                  },
-                  items: const [
-                    DropdownMenuItem(
-                      value: ReportType.sales,
-                      child: Text('تقرير المبيعات'),
-                    ),
-                    DropdownMenuItem(
-                      value: ReportType.purchases,
-                      child: Text('تقرير المشتريات'),
-                    ),
-                    DropdownMenuItem(
-                      value: ReportType.inventory,
-                      child: Text('تقرير المخزون'),
-                    ),
-                    DropdownMenuItem(
-                      value: ReportType.returns,
-                      child: Text('تقرير المرتجعات'),
-                    ),
-                    DropdownMenuItem(
-                      value: ReportType.vouchers,
-                      child: Text('تقرير السندات'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                if (_selectedReportType != ReportType.inventory)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _selectDate(context, true),
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'من تاريخ',
-                              border: OutlineInputBorder(),
-                            ),
-                            child: Text(DateFormat('yyyy-MM-dd').format(_startDate)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _selectDate(context, false),
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'إلى تاريخ',
-                              border: OutlineInputBorder(),
-                            ),
-                            child: Text(DateFormat('yyyy-MM-dd').format(_endDate)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {});
-                  },
-                  child: const Text('تحديث التقرير'),
-                ),
-              ],
-            ),
-          ),
-          const Divider(),
-          Expanded(
-            child: ValueListenableBuilder<Box>(
-              valueListenable: _getSelectedBoxListenables(),
-              builder: (context, box, _) {
-                return _buildReportContent();
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // دالة مساعدة لتحديد الصندوق الذي يجب الاستماع إليه
-  ValueListenable _getSelectedBoxListenables() {
-    switch (_selectedReportType) {
-      case ReportType.sales:
-      case ReportType.purchases:
-        return invoicesBox.listenable();
-      case ReportType.inventory:
-        return itemsBox.listenable();
-      case ReportType.returns:
-        return returnsBox.listenable();
-      case ReportType.vouchers:
-        return vouchersBox.listenable();
-      default:
-        return invoicesBox.listenable();
-    }
-  }
-}
