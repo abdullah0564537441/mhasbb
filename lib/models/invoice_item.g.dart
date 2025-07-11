@@ -17,31 +17,28 @@ class InvoiceItemAdapter extends TypeAdapter<InvoiceItem> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return InvoiceItem(
-      itemId: fields[0] as String,
-      itemName: fields[1] as String,
-      quantity: fields[2] as double,
-      unit: fields[3] as String,
-      sellingPrice: fields[4] as double,
-      purchasePrice: fields[5] as double,
+      id: fields[0] as String,
+      itemId: fields[1] as String,
+      itemName: fields[2] as String,
+      quantity: fields[3] as double,
+      price: fields[4] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, InvoiceItem obj) {
     writer
-      ..writeByte(6)
-      ..writeByte(0)
-      ..write(obj.itemId)
-      ..writeByte(1)
-      ..write(obj.itemName)
-      ..writeByte(2)
-      ..write(obj.quantity)
-      ..writeByte(3)
-      ..write(obj.unit)
-      ..writeByte(4)
-      ..write(obj.sellingPrice)
       ..writeByte(5)
-      ..write(obj.purchasePrice);
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.itemId)
+      ..writeByte(2)
+      ..write(obj.itemName)
+      ..writeByte(3)
+      ..write(obj.quantity)
+      ..writeByte(4)
+      ..write(obj.price);
   }
 
   @override

@@ -19,10 +19,10 @@ class ItemAdapter extends TypeAdapter<Item> {
     return Item(
       id: fields[0] as String,
       name: fields[1] as String,
-      quantity: fields[2] as double,
-      unit: fields[3] as String,
-      purchasePrice: fields[4] as double,
-      sellingPrice: fields[5] as double,
+      unit: fields[2] as String,
+      purchasePrice: fields[3] as double,
+      salePrice: fields[4] as double,
+      currentStock: fields[5] as double,
     );
   }
 
@@ -35,13 +35,13 @@ class ItemAdapter extends TypeAdapter<Item> {
       ..writeByte(1)
       ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.quantity)
-      ..writeByte(3)
       ..write(obj.unit)
-      ..writeByte(4)
+      ..writeByte(3)
       ..write(obj.purchasePrice)
+      ..writeByte(4)
+      ..write(obj.salePrice)
       ..writeByte(5)
-      ..write(obj.sellingPrice);
+      ..write(obj.currentStock);
   }
 
   @override

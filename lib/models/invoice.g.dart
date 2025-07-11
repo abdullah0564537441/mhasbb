@@ -21,7 +21,7 @@ class InvoiceAdapter extends TypeAdapter<Invoice> {
       invoiceNumber: fields[1] as String,
       type: fields[2] as InvoiceType,
       date: fields[3] as DateTime,
-      items: (fields[4] as List).cast<InvoiceItem>(),
+      items: (fields[4] as HiveList).castHiveList(),
       customerId: fields[5] as String?,
       customerName: fields[6] as String?,
       supplierId: fields[7] as String?,
@@ -29,13 +29,14 @@ class InvoiceAdapter extends TypeAdapter<Invoice> {
       paymentMethod: fields[9] as PaymentMethod,
       originalInvoiceId: fields[10] as String?,
       totalAmount: fields[11] as double,
+      notes: fields[12] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Invoice obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -59,7 +60,9 @@ class InvoiceAdapter extends TypeAdapter<Invoice> {
       ..writeByte(10)
       ..write(obj.originalInvoiceId)
       ..writeByte(11)
-      ..write(obj.totalAmount);
+      ..write(obj.totalAmount)
+      ..writeByte(12)
+      ..write(obj.notes);
   }
 
   @override
