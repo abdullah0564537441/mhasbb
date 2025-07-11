@@ -26,7 +26,7 @@ class VoucherAdapter extends TypeAdapter<Voucher> {
       partyId: fields[6] as String?,
       partyName: fields[7] as String?,
       partyType: fields[8] as String?,
-      notes: fields[9] as String?,
+      description: fields[9] as String?,
     );
   }
 
@@ -53,7 +53,7 @@ class VoucherAdapter extends TypeAdapter<Voucher> {
       ..writeByte(8)
       ..write(obj.partyType)
       ..writeByte(9)
-      ..write(obj.notes);
+      ..write(obj.description);
   }
 
   @override

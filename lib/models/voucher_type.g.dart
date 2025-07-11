@@ -14,21 +14,21 @@ class VoucherTypeAdapter extends TypeAdapter<VoucherType> {
   VoucherType read(BinaryReader reader) {
     switch (reader.readByte()) {
       case 0:
-        return VoucherType.expense;
+        return VoucherType.receipt;
       case 1:
-        return VoucherType.income;
+        return VoucherType.payment;
       default:
-        return VoucherType.expense;
+        return VoucherType.receipt;
     }
   }
 
   @override
   void write(BinaryWriter writer, VoucherType obj) {
     switch (obj) {
-      case VoucherType.expense:
+      case VoucherType.receipt:
         writer.writeByte(0);
         break;
-      case VoucherType.income:
+      case VoucherType.payment:
         writer.writeByte(1);
         break;
     }
