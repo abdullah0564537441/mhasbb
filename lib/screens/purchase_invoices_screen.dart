@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 
 import 'package:mhasbb/models/invoice.dart';
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐ أضف هذا السطر ⭐
 import 'package:mhasbb/screens/add_edit_purchase_invoice_screen.dart'; // تأكد من وجوده
 
 class PurchaseInvoicesScreen extends StatefulWidget {
