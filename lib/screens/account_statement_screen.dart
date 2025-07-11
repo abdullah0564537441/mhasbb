@@ -1,7 +1,7 @@
 // lib/screens/account_statement_screen.dart
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:intl/intl.dart'; // لتنسيق التاريخ والعملة
+import 'package:intl/intl.dart';
 
 // استيراد الموديلات الضرورية
 import 'package:mhasbb/models/invoice.dart';
@@ -9,8 +9,8 @@ import 'package:mhasbb/models/return_invoice.dart';
 import 'package:mhasbb/models/voucher.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/supplier.dart';
-import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ مهم: استيراد InvoiceType من ملفه الخاص ⭐⭐
-import 'package:mhasbb/models/voucher_type.dart'; // ⭐⭐ مهم: استيراد VoucherType من ملفه الخاص ⭐⭐
+import 'package:mhasbb/models/invoice_type.dart';
+import 'package:mhasbb/models/voucher_type.dart';
 
 class AccountStatementScreen extends StatefulWidget {
   const AccountStatementScreen({super.key});
@@ -22,8 +22,8 @@ class AccountStatementScreen extends StatefulWidget {
 class _AccountStatementScreenState extends State<AccountStatementScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
-  String? _selectedPartyType; // 'Customer' أو 'Supplier' أو 'All'
-  String? _selectedPartyId; // معرف العميل أو المورد المحدد
+  String? _selectedPartyType;
+  String? _selectedPartyId;
 
   List<Customer> _customers = [];
   List<Supplier> _suppliers = [];
@@ -93,7 +93,7 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                 ? 'فاتورة مبيعات رقم ${invoice.invoiceNumber}'
                 : 'فاتورة مشتريات رقم ${invoice.invoiceNumber}',
             'type': (invoice.type == InvoiceType.sale) ? 'Sale' : 'Purchase',
-            'amount': invoice.totalAmount, // ⭐⭐ تم التأكد من وجود totalAmount في Invoice ⭐⭐
+            'amount': invoice.totalAmount,
             'partyName': (invoice.type == InvoiceType.sale) ? invoice.customerName : invoice.supplierName,
             'isDebit': (invoice.type == InvoiceType.purchase), // المشتريات مدينة (تزيد رصيدنا)، المبيعات دائنة (تقلل رصيدنا)
           });
@@ -107,7 +107,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
           (_endDate == null || returnInvoice.date.isBefore(_endDate!.add(const Duration(days: 1))))) {
 
         bool matchesParty = false;
-        // يجب أن نتحقق من id بدلاً من الاسم إذا كان الـid متوفر
         String? currentPartyId;
         if (returnInvoice.originalInvoiceType == InvoiceType.salesReturn && returnInvoice.customerName != null) {
           currentPartyId = _customers.firstWhere((c) => c.name == returnInvoice.customerName, orElse: () => Customer(id: '', name: '')).id;
@@ -138,16 +137,15 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
       }
     }
 
-
     // جلب السندات (قبض وصرف)
     for (var voucher in voucherBox.values) {
       if ((_startDate == null || voucher.date.isAfter(_startDate!.subtract(const Duration(days: 1)))) &&
           (_endDate == null || voucher.date.isBefore(_endDate!.add(const Duration(days: 1))))) {
 
         bool matchesParty = false;
-        if (_selectedPartyType == 'Customer' && voucher.partyType == 'Customer' && voucher.partyId == _selectedPartyId) { // ⭐⭐ تم التأكد من وجود partyType, partyId في Voucher ⭐⭐
+        if (_selectedPartyType == 'Customer' && voucher.partyType == 'Customer' && voucher.partyId == _selectedPartyId) {
           matchesParty = true;
-        } else if (_selectedPartyType == 'Supplier' && voucher.partyType == 'Supplier' && voucher.partyId == _selectedPartyId) { // ⭐⭐ تم التأكد من وجود partyType, partyId في Voucher ⭐⭐
+        } else if (_selectedPartyType == 'Supplier' && voucher.partyType == 'Supplier' && voucher.partyId == _selectedPartyId) {
           matchesParty = true;
         } else if (_selectedPartyType == 'All' || _selectedPartyType == null) {
           matchesParty = true;
@@ -156,12 +154,12 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
         if (matchesParty) {
           transactions.add({
             'date': voucher.date,
-            'description': (voucher.type == VoucherType.receipt) // ⭐⭐ تم التأكد من وجود VoucherType.receipt/payment ⭐⭐
+            'description': (voucher.type == VoucherType.receipt)
                 ? 'سند قبض رقم ${voucher.voucherNumber}'
                 : 'سند صرف رقم ${voucher.voucherNumber}',
             'type': (voucher.type == VoucherType.receipt) ? 'Receipt' : 'Payment',
             'amount': voucher.amount,
-            'partyName': voucher.partyName, // ⭐⭐ تم التأكد من وجود partyName في Voucher ⭐⭐
+            'partyName': voucher.partyName,
             'isDebit': (voucher.type == VoucherType.payment), // سند الصرف مدين، سند القبض دائن
           });
         }
@@ -178,18 +176,13 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> transactions = _getFilteredTransactions();
 
-    // حساب الرصيد الافتتاحي
     double openingBalance = 0.0;
-    // (هنا يمكن إضافة منطق لحساب رصيد افتتاحي من حركات سابقة إن وجد)
-    // حالياً، سنبدأ من الصفر
-
-    // حساب الرصيد الحالي
     double currentBalance = openingBalance;
     for (var t in transactions) {
       if (t['isDebit']) {
-        currentBalance += t['amount']; // مدين: يزيد الرصيد المستحق لنا أو يقل الرصيد المستحق علينا
+        currentBalance += t['amount'];
       } else {
-        currentBalance -= t['amount']; // دائن: يقل الرصيد المستحق لنا أو يزيد الرصيد المستحق علينا
+        currentBalance -= t['amount'];
       }
     }
 
@@ -204,14 +197,13 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // اختيار نوع الطرف (عميل / مورد / الكل)
                 DropdownButtonFormField<String>(
                   value: _selectedPartyType,
                   hint: const Text('اختر نوع الطرف'),
                   onChanged: (newValue) {
                     setState(() {
                       _selectedPartyType = newValue;
-                      _selectedPartyId = null; // إعادة تعيين الطرف عند تغيير النوع
+                      _selectedPartyId = null;
                     });
                   },
                   items: const [
@@ -226,7 +218,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                 ),
                 const SizedBox(height: 10),
 
-                // اختيار الطرف (عميل أو مورد محدد)
                 if (_selectedPartyType == 'Customer' || _selectedPartyType == 'Supplier')
                   DropdownButtonFormField<String>(
                     value: _selectedPartyId,
@@ -237,7 +228,7 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                       });
                     },
                     items: (_selectedPartyType == 'Customer' ? _customers : _suppliers)
-                        .map<DropdownMenuItem<String>>((dynamic party) => DropdownMenuItem<String>( // ⭐⭐ هنا تم تصحيح الوصول لـ id و name ⭐⭐
+                        .map<DropdownMenuItem<String>>((dynamic party) => DropdownMenuItem<String>(
                               value: party.id as String,
                               child: Text(party.name as String),
                             ))
@@ -249,7 +240,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                   ),
                 const SizedBox(height: 10),
 
-                // تحديد نطاق التاريخ
                 Row(
                   children: [
                     Expanded(
@@ -293,7 +283,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                 ElevatedButton(
                   onPressed: () {
                     setState(() {
-                      // تحديث الـ UI بناءً على الفلاتر الجديدة
                     });
                   },
                   child: const Text('تطبيق الفلاتر'),
@@ -330,7 +319,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                     itemCount: transactions.length,
                     itemBuilder: (context, index) {
                       final transaction = transactions[index];
-                      // تحديد لون النص ونوع الحركة (مدين/دائن)
                       Color textColor = transaction['isDebit'] ? Colors.green.shade700 : Colors.red.shade700;
                       String debitCreditLabel = transaction['isDebit'] ? 'مدين' : 'دائن';
 
