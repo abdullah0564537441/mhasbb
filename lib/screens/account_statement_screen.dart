@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:mhasbb/models/invoice.dart';
-import 'package:mhasbb/models/invoice_type.dart';
+// لا نحتاج لـ InvoiceType.dart هنا بعد نقله إلى invoice.dart
+// import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ قم بإزالة هذا السطر
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/supplier.dart';
-import 'package:mhasbb/models/payment_method.dart'; // ⭐⭐ استيراد PaymentMethod
+import 'package:mhasbb/models/payment_method.dart';
 
 // كلاس مساعد لتمثيل صف في كشف الحساب
 // هذا ليس HiveType ولن يتم تخزينه في Hive مباشرة
@@ -19,7 +20,7 @@ class AccountStatementEntry {
   final double creditAmount; // المبلغ الذي نقص من العميل/المورد (يعني العميل/المورد دائن لك)
   final double runningBalance; // الرصيد بعد هذه الحركة
   final String? relatedInvoiceId; // لربط الحركة بالفاتورة الأصلية
-  final PaymentMethod? paymentMethod; // ⭐⭐ إضافة طريقة الدفع هنا للعرض
+  final PaymentMethod? paymentMethod; // إضافة طريقة الدفع هنا للعرض
 
   AccountStatementEntry({
     required this.date,
@@ -28,7 +29,7 @@ class AccountStatementEntry {
     this.creditAmount = 0.0,
     required this.runningBalance,
     this.relatedInvoiceId,
-    this.paymentMethod, // ⭐⭐ تهيئة الحقل الجديد
+    this.paymentMethod,
   });
 }
 
@@ -69,7 +70,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
     }
   }
 
-  // ⭐⭐ دالة مساعدة لتحويل PaymentMethod إلى نص عربي
   String _getPaymentMethodDisplayName(PaymentMethod method) {
     switch (method) {
       case PaymentMethod.cash:
@@ -83,6 +83,18 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
     }
   }
 
+  double _calculateInvoiceTotal(Invoice invoice) {
+    double total = 0.0;
+    for (var item in invoice.items) {
+      if (invoice.type == InvoiceType.sale || invoice.type == InvoiceType.salesReturn) {
+        total += item.quantity * item.sellingPrice;
+      } else if (invoice.type == InvoiceType.purchase || invoice.type == InvoiceType.purchaseReturn) {
+        total += item.quantity * item.purchasePrice;
+      }
+    }
+    return total;
+  }
+
   List<AccountStatementEntry> _generateAccountStatement() {
     if (_selectedPartyId == null) {
       return [];
@@ -91,74 +103,60 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
     final List<Invoice> relevantInvoices;
     if (_isCustomerSelected) {
       relevantInvoices = invoicesBox.values
-          .where((inv) => inv.customerId == _selectedPartyId)
+          .where((inv) =>
+              inv.customerId == _selectedPartyId &&
+              (inv.type == InvoiceType.sale || inv.type == InvoiceType.salesReturn))
           .toList();
     } else {
       relevantInvoices = invoicesBox.values
-          .where((inv) => inv.supplierId == _selectedPartyId)
+          .where((inv) =>
+              inv.supplierId == _selectedPartyId &&
+              (inv.type == InvoiceType.purchase || inv.type == InvoiceType.purchaseReturn))
           .toList();
     }
 
-    // فرز الفواتير حسب التاريخ لضمان تسلسل الرصيد الصحيح
     relevantInvoices.sort((a, b) => a.date.compareTo(b.date));
 
     List<AccountStatementEntry> statementEntries = [];
-    double currentBalance = 0.0; // الرصيد التراكمي
+    double currentBalance = 0.0;
 
     for (var invoice in relevantInvoices) {
-      double totalInvoiceAmount = invoice.items.fold(0.0, (sum, item) {
-        if (invoice.type == InvoiceType.sale) {
-          return sum + (item.quantity * item.sellingPrice);
-        } else if (invoice.type == InvoiceType.purchase) {
-          // لفاتورة الشراء: نستخدم سعر الشراء.
-          // هذا يمثل المبلغ الذي أنت مدين به للمورد.
-          return sum + (item.quantity * item.purchasePrice);
-        }
-        return sum;
-      });
+      double totalAmount = _calculateInvoiceTotal(invoice);
 
-      String description;
+      String description = ''; // تهيئة الوصف
       double debit = 0.0;
       double credit = 0.0;
 
       if (_isCustomerSelected) {
-        // كشف حساب عميل (حركات البيع)
+        // كشف حساب عميل
         if (invoice.type == InvoiceType.sale) {
-          // فاتورة بيع: العميل مدين لك
-          debit = totalInvoiceAmount;
-          currentBalance += totalInvoiceAmount;
-          description = 'فاتورة مبيعات رقم ${invoice.invoiceNumber} (${_getPaymentMethodDisplayName(invoice.paymentMethod)})'; // ⭐⭐ عرض طريقة الدفع
-          // ⭐⭐ ملاحظة هامة جداً:
-          // إذا كانت هذه الفاتورة "نقدية" أو "تحويل بنكي"، فمن المفترض أن يتم تسجيل دفعة مقابلة لها
-          // في نفس اليوم (أو مباشرة بعدها) لجعل الرصيد الصافي لهذه الفاتورة صفرًا.
-          // حالياً، هذا الكشف يعرض الفواتير فقط ولا يعادلها بالدفعات.
-          // لإظهار "الرصيد المستحق" بدقة، يجب دمج سجلات الدفعات (التي لم يتم إنشاؤها بعد في هذا النظام).
-          // على سبيل المثال، إذا كانت PaymentMethod.cash، يمكننا افتراض دفعة وتسجيلها كـ creditAmount هنا،
-          // ولكن هذا ليس الحل الأمثل بدون نظام دفعات منفصل.
-          // لذا، حالياً، الفواتير النقدية ستظهر مدين، والفواتير الآجلة ستظهر مدين.
-          // الفرق هو أن الآجلة ستبقى مدين حتى تسجل دفعة يدوياً، بينما النقدية من المفترض أن تكون قد سُددت بالفعل.
-
+          // فاتورة مبيعات: العميل مدين لك (يزيد رصيد العميل)
+          debit = totalAmount;
+          currentBalance += totalAmount;
+          description = 'فاتورة مبيعات رقم ${invoice.invoiceNumber} (${_getPaymentMethodDisplayName(invoice.paymentMethod)})';
+        } else if (invoice.type == InvoiceType.salesReturn) {
+          // مرتجع مبيعات: العميل دائن لك (يقل رصيد العميل)
+          credit = totalAmount;
+          currentBalance -= totalAmount;
+          description = 'مرتجع مبيعات رقم ${invoice.invoiceNumber} للفاتورة ${invoice.originalInvoiceId != null ? invoicesBox.get(invoice.originalInvoiceId)?.invoiceNumber ?? 'غير معروف' : 'غير معروف'} (${_getPaymentMethodDisplayName(invoice.paymentMethod)})';
         }
-        // يمكن إضافة مرتجعات المبيعات هنا مستقبلاً كحركات دائنة
       } else {
-        // كشف حساب مورد (حركات الشراء)
+        // كشف حساب مورد
         if (invoice.type == InvoiceType.purchase) {
-          // فاتورة شراء: أنت مدين للمورد (المورد دائن لك)
-          credit = totalInvoiceAmount;
-          currentBalance -= totalInvoiceAmount;
-          description = 'فاتورة مشتريات رقم ${invoice.invoiceNumber} (${_getPaymentMethodDisplayName(invoice.paymentMethod)})'; // ⭐⭐ عرض طريقة الدفع
-          // ⭐⭐ ملاحظة هامة جداً:
-          // نفس ملاحظة فاتورة البيع النقدية تنطبق هنا.
-          // إذا كانت هذه الفاتورة "نقدية" أو "تحويل بنكي"، فمن المفترض أن تكون قد قمت بسدادها فوراً.
-          // لإظهار "الرصيد المستحق عليك" بدقة للمورد، يجب دمج سجلات الدفعات الصادرة.
+          // فاتورة مشتريات: أنت مدين للمورد (يزيد رصيد المورد)
+          credit = totalAmount;
+          currentBalance -= totalAmount; // الرصيد بالسالب يعني عليك للمورد
+          description = 'فاتورة مشتريات رقم ${invoice.invoiceNumber} (${_getPaymentMethodDisplayName(invoice.paymentMethod)})';
+        } else if (invoice.type == InvoiceType.purchaseReturn) {
+          // مرتجع مشتريات: أنت دائن للمورد (يقل رصيد المورد)
+          debit = totalAmount;
+          currentBalance += totalAmount; // الرصيد بالموجب يعني لك عند المورد
+          description = 'مرتجع مشتريات رقم ${invoice.invoiceNumber} للفاتورة ${invoice.originalInvoiceId != null ? invoicesBox.get(invoice.originalInvoiceId)?.invoiceNumber ?? 'غير معروف' : 'غير معروف'} (${_getPaymentMethodDisplayName(invoice.paymentMethod)})';
         }
-        // يمكن إضافة مرتجعات المشتريات هنا مستقبلاً كحركات مدينة
       }
 
-      // إضافة الحركة إلى كشف الحساب فقط إذا كانت ذات صلة بالطرف المختار
-      // (تجنباً لإضافة فواتير الشراء في كشف حساب العميل والعكس)
-      if ((_isCustomerSelected && invoice.type == InvoiceType.sale) ||
-          (!_isCustomerSelected && invoice.type == InvoiceType.purchase)) {
+      // إضافة الحركة فقط إذا كان هناك مبلغ (لتجنب حركات بصفر إذا لم يتم تعيين نوع الفاتورة بشكل صحيح)
+      if (debit > 0 || credit > 0) {
         statementEntries.add(
           AccountStatementEntry(
             date: invoice.date,
@@ -167,7 +165,7 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
             creditAmount: credit,
             runningBalance: currentBalance,
             relatedInvoiceId: invoice.id,
-            paymentMethod: invoice.paymentMethod, // ⭐⭐ تمرير طريقة الدفع
+            paymentMethod: invoice.paymentMethod,
           ),
         );
       }
@@ -198,9 +196,8 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                     onChanged: (value) {
                       setState(() {
                         _isCustomerSelected = (value == 'customer');
-                        _selectedPartyId = null; // إعادة تعيين الاختيار عند تغيير النوع
+                        _selectedPartyId = null;
                         _selectedPartyName = null;
-                        // حاول اختيار أول عميل أو مورد بناءً على النوع الجديد
                         if (_isCustomerSelected && customersBox.isNotEmpty) {
                           _selectedPartyId = customersBox.values.first.id;
                           _selectedPartyName = customersBox.values.first.name;
@@ -208,8 +205,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                           _selectedPartyId = suppliersBox.values.first.id;
                           _selectedPartyName = suppliersBox.values.first.name;
                         }
-                        // إعادة توليد كشف الحساب عند تغيير الطرف
-                        _generateAccountStatement(); // لا داعي لحفظ الناتج هنا، فقط للتأكد من التحديث
                       });
                     },
                     items: const [
@@ -270,8 +265,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                             } else {
                               _selectedPartyName = suppliersBox.values.firstWhere((s) => s.id == newValue).name;
                             }
-                            // إعادة توليد كشف الحساب عند تغيير الطرف
-                            _generateAccountStatement();
                           });
                         },
                         items: parties.map((party) {
@@ -305,7 +298,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                         );
                       }
 
-                      // حساب الرصيد النهائي الإجمالي
                       final double finalBalance = statementEntries.last.runningBalance;
 
                       return Column(
@@ -331,15 +323,14 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                                               'التاريخ: ${DateFormat('yyyy-MM-dd').format(entry.date)}',
                                               style: Theme.of(context).textTheme.bodySmall,
                                             ),
-                                            // ⭐⭐ عرض طريقة الدفع هنا كـ Chip
                                             if (entry.paymentMethod != null)
                                               Chip(
                                                 label: Text(_getPaymentMethodDisplayName(entry.paymentMethod!)),
                                                 backgroundColor: entry.paymentMethod == PaymentMethod.credit
-                                                    ? Colors.orange.shade100 // آجل
+                                                    ? Colors.orange.shade100
                                                     : entry.paymentMethod == PaymentMethod.cash
-                                                        ? Colors.green.shade100 // نقدي
-                                                        : Colors.blue.shade100, // تحويل بنكي
+                                                        ? Colors.green.shade100
+                                                        : Colors.blue.shade100,
                                               ),
                                           ],
                                         ),
@@ -393,7 +384,6 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                               },
                             ),
                           ),
-                          // إجمالي الرصيد النهائي في الأسفل
                           Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Card(
