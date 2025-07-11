@@ -8,7 +8,6 @@ import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/supplier.dart'; // تأكد من استيراد المورد
-import 'package:mhasbb/models/invoice_type.dart';
 import 'package:mhasbb/models/payment_method.dart'; // ⭐ أضف هذا السطر
 
 class AddEditPurchaseInvoiceScreen extends StatefulWidget {
