@@ -15,8 +15,8 @@ import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/supplier.dart';
 import 'package:mhasbb/models/voucher.dart';
 import 'package:mhasbb/models/voucher_type.dart';
-import 'package:mhasbb/models/return_invoice.dart'; // ⭐⭐ استيراد موديل المرتجعات الجديد
-import 'package:mhasbb/models/payment_method.dart'; // افترض وجوده
+import 'package:mhasbb/models/return_invoice.dart';
+import 'package:mhasbb/models/payment_method.dart';
 
 // متغير عام لـ SharedPreferences (إذا كنت تستخدمه)
 late SharedPreferences prefs;
@@ -42,7 +42,7 @@ void main() async {
     Hive.registerAdapter(VoucherTypeAdapter()); // TypeId 7 (من ملف voucher_type.dart)
     Hive.registerAdapter(VoucherAdapter()); // TypeId 8 (من ملف voucher.dart)
     Hive.registerAdapter(PaymentMethodAdapter()); // TypeId 6 (افترض وجوده)
-    Hive.registerAdapter(ReturnInvoiceAdapter()); // ⭐⭐ تسجيل محول المرتجعات (TypeId 9 من ملف return_invoice.dart)
+    Hive.registerAdapter(ReturnInvoiceAdapter()); // TypeId 9 (من ملف return_invoice.dart)
 
 
     // ⭐⭐ فتح جميع صناديق Hive (Boxes)
@@ -50,14 +50,13 @@ void main() async {
     await Hive.openBox<Customer>('customers_box');
     await Hive.openBox<Invoice>('invoices_box');
     await Hive.openBox<Supplier>('suppliers_box');
-    await Hive.openBox<Voucher>('vouchers_box'); // ⭐⭐ فتح صندوق السندات
-    await Hive.openBox<ReturnInvoice>('return_invoices_box'); // ⭐⭐ فتح صندوق المرتجعات
+    await Hive.openBox<Voucher>('vouchers_box');
+    await Hive.openBox<ReturnInvoice>('return_invoices_box');
 
     print('✅ App Initialization Complete...');
   } catch (e, stacktrace) {
     print('❌ Critical Error during App Initialization: $e');
     print('Stacktrace: $stacktrace');
-    // يمكنك إضافة واجهة مستخدم لعرض رسالة الخطأ للمستخدم هنا إذا كان الخطأ حرجًا
   }
   runApp(const MyApp());
 }
@@ -68,12 +67,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Mhasbb App', // اسم تطبيقك
-      debugShowCheckedModeBanner: false, // لإزالة شارة 'DEBUG'
+      title: 'Mhasbb App',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
-        fontFamily: 'Tajawal', // استخدام خط Tajawal إذا كان متوفرًا
+        fontFamily: 'Tajawal',
         textTheme: const TextTheme(
           bodyLarge: TextStyle(fontSize: 16),
           bodyMedium: TextStyle(fontSize: 14),
@@ -87,7 +86,6 @@ class MyApp extends StatelessWidget {
           centerTitle: true,
           elevation: 4,
         ),
-        // ألوان الأزرار
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             foregroundColor: Colors.white,
@@ -103,7 +101,7 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
       ),
-      home: const HomeScreen(), // الشاشة الرئيسية للتطبيق
+      home: const HomeScreen(),
     );
   }
 }
