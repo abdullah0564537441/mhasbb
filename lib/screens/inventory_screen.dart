@@ -1,11 +1,10 @@
+// lib/screens/inventory_screen.dart
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart'; // لاستخدام ValueListenableBuilder ومراقبة الصندوق
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart';
 
-// استيراد موديل الصنف (Item)
 import 'package:mhasbb/models/item.dart';
-// ⭐ استيراد شاشة إضافة/تعديل الأصناف الجديدة
 import 'package:mhasbb/screens/add_edit_item_screen.dart';
-
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -15,141 +14,117 @@ class InventoryScreen extends StatefulWidget {
 }
 
 class _InventoryScreenState extends State<InventoryScreen> {
-  late Box<Item> itemsBox; // صندوق Hive الخاص بالأصناف
-
-  @override
-  void initState() {
-    super.initState();
-    // فتح صندوق الأصناف عند تهيئة الشاشة
-    itemsBox = Hive.box<Item>('items_box');
-  }
-
-  // دالة لعرض نافذة التأكيد وحذف الصنف
-  void _confirmAndDeleteItem(BuildContext context, Item item) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('تأكيد الحذف'),
-          content: Text('هل أنت متأكد أنك تريد حذف الصنف "${item.name}"؟'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('لا', style: TextStyle(color: Colors.indigo)),
-              onPressed: () {
-                Navigator.of(context).pop(); // إغلاق نافذة التأكيد
-              },
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, // لون أحمر لزر الحذف
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('نعم، احذف', style: TextStyle(color: Colors.white)),
-              onPressed: () {
-                // حذف الصنف من Hive باستخدام مفتاحه (key)
-                if (item.key != null) {
-                  itemsBox.delete(item.key);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('تم حذف الصنف بنجاح!')),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('خطأ: لا يمكن العثور على مفتاح الصنف للحذف.')),
-                  );
-                }
-                Navigator.of(context).pop(); // إغلاق نافذة التأكيد
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('المخزون'),
+        title: const Text('إدارة المخزون'),
         centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60.0),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'البحث باسم الصنف أو الوحدة',
+                prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                fillColor: Colors.white24,
+                filled: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  borderSide: BorderSide.none,
+                ),
+                hintStyle: const TextStyle(color: Colors.white70),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+              ),
+              style: const TextStyle(color: Colors.white),
+              cursorColor: Colors.white,
+            ),
+          ),
+        ),
       ),
-      // استخدام ValueListenableBuilder لمراقبة التغييرات في صندوق Hive
-      // هذا سيضمن تحديث الواجهة تلقائيًا عند إضافة/حذف/تعديل الأصناف
-      body: ValueListenableBuilder<Box<Item>>(
-        valueListenable: itemsBox.listenable(),
-        builder: (context, box, _) {
-          if (box.isEmpty) {
-            return const Center(
+      body: ValueListenableBuilder(
+        valueListenable: Hive.box<Item>('items_box').listenable(),
+        builder: (context, Box<Item> box, _) {
+          final allItems = box.values.toList();
+
+          final filteredItems = allItems.where((item) {
+            final nameLower = item.name.toLowerCase();
+            final unitLower = item.unit.toLowerCase();
+            return nameLower.contains(_searchQuery) || unitLower.contains(_searchQuery);
+          }).toList();
+
+          if (filteredItems.isEmpty) {
+            return Center(
               child: Text(
-                'لا توجد أصناف في المخزون حتى الآن.\nاضغط على "+" لإضافة صنف جديد.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, color: Colors.grey),
+                _searchQuery.isEmpty
+                    ? 'لا توجد أصناف مسجلة حتى الآن.'
+                    : 'لا توجد أصناف مطابقة لبحثك.',
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
             );
           }
 
-          // عرض قائمة الأصناف الموجودة
+          filteredItems.sort((a, b) => a.name.compareTo(b.name));
+
           return ListView.builder(
             padding: const EdgeInsets.all(8.0),
-            itemCount: box.length,
+            itemCount: filteredItems.length,
             itemBuilder: (context, index) {
-              final item = box.getAt(index); // الحصول على الصنف من الصندوق
-
-              // تأكد أن الصنف ليس null قبل محاولة عرضه
-              if (item == null) {
-                return const SizedBox.shrink(); // لا تعرض شيئًا إذا كان الصنف null
-              }
-
+              final item = filteredItems[index];
               return Card(
-                margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
                 elevation: 4,
+                margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                  leading: const Icon(Icons.inventory_2, size: 40, color: Colors.teal),
-                  title: Text(
-                    item.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text('الكمية: ${item.quantity} ${item.unit}', style: TextStyle(color: Colors.grey[700])),
-                      Text('سعر الشراء: ${item.purchasePrice.toStringAsFixed(2)}', style: TextStyle(color: Colors.grey[700])),
-                      Text('سعر البيع: ${item.sellingPrice.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    ],
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blueGrey),
-                        onPressed: () {
-                          // ⭐ الانتقال إلى شاشة تفاصيل/تعديل الصنف وتمرير الصنف
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddEditItemScreen(item: item), // تمرير الصنف للتعديل
-                            ),
-                          );
-                          print('View/Edit item: ${item.name}');
-                        },
+                child: InkWell(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddEditItemScreen(
+                          item: item,
+                        ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          _confirmAndDeleteItem(context, item); // استدعاء دالة التأكيد والحذف
-                        },
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    print('Tapped on item: ${item.name}');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('تم النقر على الصنف (يمكنك تعديل هذا السلوك)')),
                     );
+                    setState(() {});
                   },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              item.name,
+                              style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Theme.of(context).primaryColor),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                _confirmDeleteItem(context, item);
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text('الوحدة: ${item.unit}', style: TextStyle(color: Colors.grey[700])),
+                        Text('الكمية الحالية: ${NumberFormat.decimalPattern().format(item.currentStock)} ${item.unit}', // ⭐⭐ تم التصحيح هنا ⭐⭐
+                            style: TextStyle(color: Colors.grey[700])),
+                        const SizedBox(height: 5),
+                        Text('سعر الشراء: ${item.purchasePrice.toStringAsFixed(2)}', style: const TextStyle(fontSize: 15)),
+                        Text('سعر البيع: ${item.salePrice.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)), // ⭐⭐ تم التصحيح هنا ⭐⭐
+                      ],
+                    ),
+                  ),
                 ),
               );
             },
@@ -157,17 +132,45 @@ class _InventoryScreenState extends State<InventoryScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // ⭐ الانتقال إلى شاشة إضافة صنف جديد فارغة
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddEditItemScreen(), // للانتقال إلى شاشة إضافة صنف جديد
+              builder: (context) => const AddEditItemScreen(),
             ),
           );
-          print('Add New Item button pressed');
+          setState(() {});
         },
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _confirmDeleteItem(BuildContext context, Item item) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف الصنف'),
+        content: Text('هل أنت متأكد أنك تريد حذف الصنف "${item.name}"؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await item.delete();
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم حذف الصنف بنجاح')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('حذف'),
+          ),
+        ],
       ),
     );
   }
