@@ -11,7 +11,9 @@ import 'package:mhasbb/screens/suppliers_screen.dart';
 import 'package:mhasbb/screens/customers_screen.dart';
 import 'package:mhasbb/screens/account_statement_screen.dart';
 import 'package:mhasbb/screens/reports_screen.dart';
-import 'package:mhasbb/screens/vouchers_screen.dart'; // ⭐ تم إضافة استيراد شاشة السندات
+import 'package:mhasbb/screens/vouchers_screen.dart';
+// ⭐⭐ أضف استيراد شاشة المرتجعات هنا
+import 'package:mhasbb/screens/add_edit_return_invoice_screen.dart';
 import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen
 
 class HomeScreen extends StatelessWidget {
@@ -49,8 +51,12 @@ class HomeScreen extends StatelessWidget {
       case 'التقارير':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportsScreen()));
         break;
-      case 'سندات الصرف والقبض': // ⭐ تم إضافة توجيه شاشة السندات
+      case 'سندات الصرف والقبض':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const VouchersScreen()));
+        break;
+      // ⭐⭐ أضف توجيه شاشة المرتجعات هنا
+      case 'المرتجعات':
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditReturnInvoiceScreen()));
         break;
       case 'الضريبة':
       case 'الإعدادات':
@@ -89,7 +95,9 @@ class HomeScreen extends StatelessWidget {
             _buildSectionCard(context, 'الموردين', Icons.local_shipping, Colors.purple),
             _buildSectionCard(context, 'كشف الحساب', Icons.account_balance_wallet, Colors.redAccent),
             _buildSectionCard(context, 'التقارير', Icons.bar_chart, Colors.brown),
-            _buildSectionCard(context, 'سندات الصرف والقبض', Icons.receipt_long, Colors.deepOrange), // ⭐ تم إضافة بطاقة السندات
+            _buildSectionCard(context, 'سندات الصرف والقبض', Icons.receipt_long, Colors.deepOrange),
+            // ⭐⭐ أضف بطاقة المرتجعات هنا
+            _buildSectionCard(context, 'المرتجعات', Icons.assignment_return, Colors.indigoAccent),
             _buildSectionCard(context, 'الضريبة', Icons.calculate, Colors.lime),
             _buildSectionCard(context, 'الإعدادات', Icons.settings, Colors.grey),
           ],
