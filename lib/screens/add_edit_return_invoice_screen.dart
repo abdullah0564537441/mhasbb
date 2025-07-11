@@ -9,10 +9,15 @@ import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/supplier.dart';
-import 'package:mhasbb/models/payment_method.dart'; // لتحديد طريقة رد/تحصيل المبلغ
+import 'package:mhasbb/models/payment_method.dart';
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ هذا هو الاستيراد الذي كان مفقوداً ⭐⭐
+// import 'package:mhasbb/models/return_invoice.dart'; // إذا كنت تستخدم موديل ReturnInvoice منفصل
+
 
 class AddEditReturnInvoiceScreen extends StatefulWidget {
-  final Invoice? returnInvoice; // إذا كنا نعدل مرتجعاً موجوداً
+  // استخدام Invoice لتمثيل المرتجع بناءً على الكود الحالي.
+  // إذا كان لديك موديل ReturnInvoice منفصل، قم بتغيير هذا إلى ReturnInvoice?
+  final Invoice? returnInvoice;
 
   const AddEditReturnInvoiceScreen({super.key, this.returnInvoice});
 
@@ -28,6 +33,7 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
   late Box<Item> itemsBox;
   late Box<Customer> customersBox;
   late Box<Supplier> suppliersBox;
+  // late Box<ReturnInvoice> returnInvoicesBox; // إذا كنت تستخدم صندوق ReturnInvoice منفصل
 
   InvoiceType? _returnType; // لتحديد ما إذا كان مرتجع بيع أو شراء
   Invoice? _selectedOriginalInvoice; // الفاتورة الأصلية التي يتم عمل المرتجع لها
@@ -39,7 +45,7 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
   late TextEditingController _returnNumberController;
   late TextEditingController _dateController;
   DateTime _selectedDate = DateTime.now();
-  late PaymentMethod _paymentMethodForReturn; // طريقة الدفع لرد المبلغ/خصمه
+  late PaymentMethod _paymentMethodForReturn; // طريقة الدفع لرد/تحصيل المبلغ
 
   @override
   void initState() {
@@ -48,14 +54,15 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
     itemsBox = Hive.box<Item>('items_box');
     customersBox = Hive.box<Customer>('customers_box');
     suppliersBox = Hive.box<Supplier>('suppliers_box');
+    // returnInvoicesBox = Hive.box<ReturnInvoice>('return_invoices_box'); // إذا كنت تستخدم صندوق ReturnInvoice منفصل
 
     if (widget.returnInvoice == null) {
       // مرتجع جديد
-      _returnNumberController = TextEditingController(text: _generateNextReturnNumber(null));
+      _returnNumberController = TextEditingController(text: 'الرجاء اختيار نوع المرتجع'); // لا نولد الرقم حتى يتم اختيار النوع
       _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_selectedDate));
       _paymentMethodForReturn = PaymentMethod.cash; // افتراضي: نقدي
     } else {
-      // تعديل مرتجع موجود
+      // تعديل مرتجع موجود (بافتراض أنه Invoice)
       _returnNumberController = TextEditingController(text: widget.returnInvoice!.invoiceNumber);
       _selectedDate = widget.returnInvoice!.date;
       _dateController = TextEditingController(text: DateFormat('yyyy-MM-dd').format(_selectedDate));
@@ -83,13 +90,13 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
   }
 
   String _generateNextReturnNumber(InvoiceType? type) {
+    if (type == null) return 'الرجاء اختيار نوع المرتجع'; // لا نولد الرقم حتى يتم اختيار النوع
+
     String prefix = '';
     if (type == InvoiceType.salesReturn) {
       prefix = 'SR-'; // Sales Return
     } else if (type == InvoiceType.purchaseReturn) {
       prefix = 'PR-'; // Purchase Return
-    } else {
-      return 'R-XXXX'; // Placeholder if type is not selected yet
     }
 
     final allReturns = invoicesBox.values.where((inv) => inv.type == type).toList();
@@ -102,7 +109,8 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
             maxNumber = currentNumber;
           }
         } catch (e) {
-          // Ignore errors
+          // Ignore errors for non-numeric parts after prefix
+          debugPrint('Error parsing return number: ${ret.invoiceNumber} - $e');
         }
       }
     }
@@ -151,6 +159,7 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
                   itemCount: invoices.length,
                   itemBuilder: (context, index) {
                     final invoice = invoices[index];
+                    // تأكد أن customerId/supplierId ليس null قبل محاولة الوصول إليه
                     final String partyName = isSalesReturn
                         ? (customersBox.get(invoice.customerId ?? '')?.name ?? 'عميل غير معروف')
                         : (suppliersBox.get(invoice.supplierId ?? '')?.name ?? 'مورد غير معروف');
