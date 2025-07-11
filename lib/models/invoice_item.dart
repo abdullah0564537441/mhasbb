@@ -3,10 +3,10 @@ import 'package:hive/hive.dart';
 
 part 'invoice_item.g.dart';
 
-@HiveType(typeId: 2)
+@HiveType(typeId: 4)
 class InvoiceItem extends HiveObject {
   @HiveField(0)
-  late String id; // ⭐⭐ تم إضافة هذا الحقل ⭐⭐
+  late String id;
 
   @HiveField(1)
   late String itemId;
@@ -18,13 +18,17 @@ class InvoiceItem extends HiveObject {
   late double quantity;
 
   @HiveField(4)
-  late double price; // ⭐⭐ تم التأكد من late ⭐⭐
+  late double price;
+
+  @HiveField(5) // ⭐⭐ تم إضافة هذا الحقل لوحدة الصنف في فاتورة ⭐⭐
+  late String unit;
 
   InvoiceItem({
-    required this.id, // ⭐⭐ تم إضافة هذا للكونستراكتور ⭐⭐
+    required this.id,
     required this.itemId,
     required this.itemName,
     required this.quantity,
     required this.price,
+    required this.unit, // ⭐⭐ تم إضافة هذا للكونستراكتور ⭐⭐
   });
 }
