@@ -1,10 +1,11 @@
 // lib/screens/returns_screen.dart
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart'; // لاستخدام WatchBoxBuilder
+import 'package:hive_flutter/hive_flutter.dart'; // لاستخدام ValueListenableBuilder
 import 'package:intl/intl.dart'; // لتنسيق التاريخ والأرقام
 
 import 'package:mhasbb/models/return_invoice.dart'; // استيراد موديل المرتجع
 import 'package:mhasbb/screens/add_edit_return_invoice_screen.dart'; // استيراد شاشة الإضافة/التعديل
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ مهم: استيراد InvoiceType ⭐⭐
 
 class ReturnsScreen extends StatefulWidget {
   const ReturnsScreen({super.key});
@@ -86,6 +87,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
             itemCount: filteredReturns.length,
             itemBuilder: (context, index) {
               final returnInvoice = filteredReturns[index];
+              // ⭐⭐ تم التأكد من وجود InvoiceType هنا ⭐⭐
               final isSalesReturn = returnInvoice.originalInvoiceType == InvoiceType.salesReturn;
               final partyName = isSalesReturn ? returnInvoice.customerName : returnInvoice.supplierName;
               final returnTypeLabel = isSalesReturn ? 'مرتجع مبيعات' : 'مرتجع مشتريات';
@@ -101,7 +103,7 @@ class _ReturnsScreenState extends State<ReturnsScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => AddEditReturnInvoiceScreen(
-                          returnInvoice: returnInvoice,
+                          returnInvoice: returnInvoice, // ⭐⭐ تم التأكد من تمرير ReturnInvoice ⭐⭐
                         ),
                       ),
                     );
