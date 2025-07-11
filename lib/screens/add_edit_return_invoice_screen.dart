@@ -4,15 +4,15 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:mhasbb/models/return_invoice.dart'; // تأكد من استيراد هذا الموديل
+import 'package:mhasbb/models/return_invoice.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/supplier.dart';
 import 'package:mhasbb/models/item.dart';
-import 'package:mhasbb/models/invoice_type.dart'; // مهم جداً
+import 'package:mhasbb/models/invoice_type.dart';
 
 class AddEditReturnInvoiceScreen extends StatefulWidget {
-  final ReturnInvoice? returnInvoice; // ⭐⭐ تم تصحيح نوع المعامل ⭐⭐
+  final ReturnInvoice? returnInvoice;
 
   const AddEditReturnInvoiceScreen({super.key, this.returnInvoice});
 
@@ -27,8 +27,8 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
   final _notesController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
-  InvoiceType? _selectedInvoiceType; // لتحديد ما إذا كان مرتجع مبيعات أو مشتريات
-  String? _selectedPartyType; // 'Customer' أو 'Supplier'
+  InvoiceType? _selectedInvoiceType;
+  String? _selectedPartyType;
   String? _selectedPartyId;
   String? _selectedPartyName;
 
@@ -36,7 +36,7 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
 
   List<Customer> _customers = [];
   List<Supplier> _suppliers = [];
-  List<Item> _availableItems = []; // قائمة بجميع الأصناف المتاحة لاختيارها
+  List<Item> _availableItems = [];
 
   @override
   void initState() {
@@ -122,6 +122,9 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
       final returnInvoiceBox = Hive.box<ReturnInvoice>('return_invoices_box');
       final totalAmount = _calculateTotalAmount();
 
+      // تحويل List<InvoiceItem> إلى HiveList<InvoiceItem>
+      final HiveList<InvoiceItem> hiveReturnItems = HiveList<InvoiceItem>(returnInvoiceBox)..addAll(_returnItems);
+
       if (widget.returnInvoice == null) {
         // إضافة مرتجع جديد
         final newReturn = ReturnInvoice(
@@ -129,11 +132,11 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
           returnNumber: _returnNumberController.text,
           date: _selectedDate,
           originalInvoiceNumber: _originalInvoiceNumberController.text.isNotEmpty ? _originalInvoiceNumberController.text : null,
-          originalInvoiceType: _selectedInvoiceType,
+          originalInvoiceType: _selectedInvoiceType!,
           customerName: _selectedPartyType == 'Customer' ? _selectedPartyName : null,
           supplierName: _selectedPartyType == 'Supplier' ? _selectedPartyName : null,
-          items: _returnItems,
-          totalAmount: totalAmount, // ⭐⭐ تم إضافة totalAmount هنا ⭐⭐
+          items: hiveReturnItems, // ⭐⭐ تم التصحيح هنا ⭐⭐
+          totalAmount: totalAmount,
           notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         );
         await returnInvoiceBox.put(newReturn.id, newReturn);
@@ -143,11 +146,11 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
         widget.returnInvoice!.date = _selectedDate;
         widget.returnInvoice!.originalInvoiceNumber = _originalInvoiceNumberController.text.isNotEmpty ? _originalInvoiceNumberController.text : null;
         widget.returnInvoice!.notes = _notesController.text.isNotEmpty ? _notesController.text : null;
-        widget.returnInvoice!.originalInvoiceType = _selectedInvoiceType;
+        widget.returnInvoice!.originalInvoiceType = _selectedInvoiceType!;
         widget.returnInvoice!.customerName = _selectedPartyType == 'Customer' ? _selectedPartyName : null;
         widget.returnInvoice!.supplierName = _selectedPartyType == 'Supplier' ? _selectedPartyName : null;
-        widget.returnInvoice!.items = _returnItems;
-        widget.returnInvoice!.totalAmount = totalAmount; // ⭐⭐ تم تحديث totalAmount هنا ⭐⭐
+        widget.returnInvoice!.items = hiveReturnItems; // ⭐⭐ تم التصحيح هنا ⭐⭐
+        widget.returnInvoice!.totalAmount = totalAmount;
         await widget.returnInvoice!.save();
       }
       if (mounted) {
@@ -315,7 +318,7 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
                                 children: [
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
-                                      value: item.itemId,
+                                      value: item.itemId.isEmpty ? null : item.itemId, // ⭐⭐ تم التصحيح هنا ⭐⭐
                                       decoration: const InputDecoration(
                                         labelText: 'الصنف',
                                         border: OutlineInputBorder(),
