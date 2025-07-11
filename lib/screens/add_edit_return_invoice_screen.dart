@@ -97,6 +97,7 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
         itemName: '',
         quantity: 1,
         price: 0.0,
+        unit: '', // ⭐⭐ تم إضافة هذا الحقل هنا ⭐⭐
       ));
     });
   }
@@ -135,7 +136,7 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
           originalInvoiceType: _selectedInvoiceType!,
           customerName: _selectedPartyType == 'Customer' ? _selectedPartyName : null,
           supplierName: _selectedPartyType == 'Supplier' ? _selectedPartyName : null,
-          items: hiveReturnItems, // ⭐⭐ تم التصحيح هنا ⭐⭐
+          items: hiveReturnItems,
           totalAmount: totalAmount,
           notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         );
@@ -149,7 +150,7 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
         widget.returnInvoice!.originalInvoiceType = _selectedInvoiceType!;
         widget.returnInvoice!.customerName = _selectedPartyType == 'Customer' ? _selectedPartyName : null;
         widget.returnInvoice!.supplierName = _selectedPartyType == 'Supplier' ? _selectedPartyName : null;
-        widget.returnInvoice!.items = hiveReturnItems; // ⭐⭐ تم التصحيح هنا ⭐⭐
+        widget.returnInvoice!.items = hiveReturnItems;
         widget.returnInvoice!.totalAmount = totalAmount;
         await widget.returnInvoice!.save();
       }
@@ -318,7 +319,7 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
                                 children: [
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
-                                      value: item.itemId.isEmpty ? null : item.itemId, // ⭐⭐ تم التصحيح هنا ⭐⭐
+                                      value: item.itemId.isEmpty ? null : item.itemId,
                                       decoration: const InputDecoration(
                                         labelText: 'الصنف',
                                         border: OutlineInputBorder(),
@@ -330,6 +331,7 @@ class _AddEditReturnInvoiceScreenState extends State<AddEditReturnInvoiceScreen>
                                           final selectedItem = _availableItems.firstWhere((i) => i.id == newValue);
                                           item.itemId = newValue!;
                                           item.itemName = selectedItem.name;
+                                          item.unit = selectedItem.unit; // ⭐⭐ تم إضافة هذا هنا ⭐⭐
                                           // سعر الصنف عند المرتجع يعتمد على نوع الفاتورة الأصلية
                                           if (_selectedInvoiceType == InvoiceType.salesReturn) {
                                             item.price = selectedItem.salePrice;
