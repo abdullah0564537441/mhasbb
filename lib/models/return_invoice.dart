@@ -5,7 +5,7 @@ import 'package:mhasbb/models/invoice.dart'; // لاستخدام InvoiceType إ�
 
 part 'return_invoice.g.dart';
 
-@HiveType(typeId: 9) // ⭐⭐ هام: تأكد أن هذا الـ typeId فريد وغير مستخدم في أي موديل Hive آخر
+@HiveType(typeId: 10) // ⭐⭐ هام: تأكد أن هذا الـ typeId فريد وغير مستخدم في أي موديل Hive آخر
 class ReturnInvoice extends HiveObject {
   @HiveField(0)
   String id; // معرف فريد للمرتجع (UUID)
