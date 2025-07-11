@@ -12,9 +12,11 @@ import 'package:mhasbb/screens/customers_screen.dart';
 import 'package:mhasbb/screens/account_statement_screen.dart';
 import 'package:mhasbb/screens/reports_screen.dart';
 import 'package:mhasbb/screens/vouchers_screen.dart';
-// ⭐⭐ أضف استيراد شاشة المرتجعات هنا
 import 'package:mhasbb/screens/add_edit_return_invoice_screen.dart';
 import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen
+// ⭐⭐ أضف استيراد شاشة الملاحظات هنا
+import 'package:mhasbb/screens/notes_screen.dart';
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -54,9 +56,12 @@ class HomeScreen extends StatelessWidget {
       case 'سندات الصرف والقبض':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const VouchersScreen()));
         break;
-      // ⭐⭐ أضف توجيه شاشة المرتجعات هنا
       case 'المرتجعات':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditReturnInvoiceScreen()));
+        break;
+      // ⭐⭐ أضف توجيه شاشة الملاحظات هنا
+      case 'الملاحظات':
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const NotesScreen()));
         break;
       case 'الضريبة':
       case 'الإعدادات':
@@ -96,8 +101,9 @@ class HomeScreen extends StatelessWidget {
             _buildSectionCard(context, 'كشف الحساب', Icons.account_balance_wallet, Colors.redAccent),
             _buildSectionCard(context, 'التقارير', Icons.bar_chart, Colors.brown),
             _buildSectionCard(context, 'سندات الصرف والقبض', Icons.receipt_long, Colors.deepOrange),
-            // ⭐⭐ أضف بطاقة المرتجعات هنا
             _buildSectionCard(context, 'المرتجعات', Icons.assignment_return, Colors.indigoAccent),
+            // ⭐⭐ أضف بطاقة الملاحظات هنا
+            _buildSectionCard(context, 'الملاحظات', Icons.note_alt, Colors.amber),
             _buildSectionCard(context, 'الضريبة', Icons.calculate, Colors.lime),
             _buildSectionCard(context, 'الإعدادات', Icons.settings, Colors.grey),
           ],
