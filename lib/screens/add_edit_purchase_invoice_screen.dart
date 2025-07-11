@@ -45,7 +45,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
       _selectedSupplierName = widget.invoice!.supplierName;
       _selectedPaymentMethod = widget.invoice!.paymentMethod;
       _invoiceItems = List.from(widget.invoice!.items);
-      _notesController.text = widget.invoice!.notes ?? ''; // ⭐⭐ تم التصحيح هنا ⭐⭐
+      _notesController.text = widget.invoice!.notes ?? '';
     } else {
       _invoiceNumberController.text = 'PUR-${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}';
     }
@@ -77,11 +77,12 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
   void _addItem() {
     setState(() {
       _invoiceItems.add(InvoiceItem(
-        id: const Uuid().v4(), // ⭐⭐ تم التصحيح هنا ⭐⭐
+        id: const Uuid().v4(),
         itemId: '',
         itemName: '',
         quantity: 1,
         price: 0.0,
+        unit: '', // ⭐⭐ تم إضافة هذا الحقل هنا ⭐⭐
       ));
     });
   }
@@ -116,12 +117,12 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
           invoiceNumber: _invoiceNumberController.text,
           type: InvoiceType.purchase,
           date: _selectedDate,
-          items: hiveInvoiceItems, // ⭐⭐ تم التصحيح هنا ⭐⭐
+          items: hiveInvoiceItems,
           supplierId: _selectedSupplierId,
           supplierName: _selectedSupplierName,
           paymentMethod: _selectedPaymentMethod,
           totalAmount: totalAmount,
-          notes: _notesController.text.isNotEmpty ? _notesController.text : null, // ⭐⭐ تم التصحيح هنا ⭐⭐
+          notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         );
         await invoiceBox.put(newInvoice.id, newInvoice);
       } else {
@@ -130,9 +131,9 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
         widget.invoice!.supplierId = _selectedSupplierId;
         widget.invoice!.supplierName = _selectedSupplierName;
         widget.invoice!.paymentMethod = _selectedPaymentMethod;
-        widget.invoice!.items = hiveInvoiceItems; // ⭐⭐ تم التصحيح هنا ⭐⭐
+        widget.invoice!.items = hiveInvoiceItems;
         widget.invoice!.totalAmount = totalAmount;
-        widget.invoice!.notes = _notesController.text.isNotEmpty ? _notesController.text : null; // ⭐⭐ تم التصحيح هنا ⭐⭐
+        widget.invoice!.notes = _notesController.text.isNotEmpty ? _notesController.text : null;
         await widget.invoice!.save();
       }
       if (mounted) {
@@ -254,7 +255,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                                 children: [
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
-                                      value: item.itemId.isEmpty ? null : item.itemId, // ⭐⭐ تم التصحيح هنا ⭐⭐
+                                      value: item.itemId.isEmpty ? null : item.itemId,
                                       decoration: const InputDecoration(
                                         labelText: 'الصنف',
                                         border: OutlineInputBorder(),
@@ -267,6 +268,7 @@ class _AddEditPurchaseInvoiceScreenState extends State<AddEditPurchaseInvoiceScr
                                           item.itemId = newValue!;
                                           item.itemName = selectedItem.name;
                                           item.price = selectedItem.purchasePrice; // سعر الشراء
+                                          item.unit = selectedItem.unit; // ⭐⭐ تم إضافة هذا هنا ⭐⭐
                                         });
                                       },
                                       items: _availableItems.map((availableItem) {
