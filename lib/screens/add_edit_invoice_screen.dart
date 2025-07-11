@@ -45,7 +45,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
       _selectedCustomerName = widget.invoice!.customerName;
       _selectedPaymentMethod = widget.invoice!.paymentMethod;
       _invoiceItems = List.from(widget.invoice!.items);
-      _notesController.text = widget.invoice!.notes ?? '';
+      _notesController.text = widget.invoice!.notes ?? ''; // ⭐⭐ تم التصحيح هنا ⭐⭐
     } else {
       _invoiceNumberController.text = 'INV-${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}';
     }
@@ -77,7 +77,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
   void _addItem() {
     setState(() {
       _invoiceItems.add(InvoiceItem(
-        id: const Uuid().v4(),
+        id: const Uuid().v4(), // ⭐⭐ تم التصحيح هنا ⭐⭐
         itemId: '',
         itemName: '',
         quantity: 1,
@@ -107,6 +107,10 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
       final invoiceBox = Hive.box<Invoice>('invoices_box');
       final totalAmount = _calculateTotalAmount();
 
+      // تحويل List<InvoiceItem> إلى HiveList<InvoiceItem>
+      final HiveList<InvoiceItem> hiveInvoiceItems = HiveList<InvoiceItem>(invoiceBox)..addAll(_invoiceItems);
+
+
       if (widget.invoice == null) {
         // إضافة فاتورة جديدة
         final newInvoice = Invoice(
@@ -114,12 +118,12 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
           invoiceNumber: _invoiceNumberController.text,
           type: InvoiceType.sale,
           date: _selectedDate,
-          items: _invoiceItems,
+          items: hiveInvoiceItems, // ⭐⭐ تم التصحيح هنا ⭐⭐
           customerId: _selectedCustomerId,
           customerName: _selectedCustomerName,
           paymentMethod: _selectedPaymentMethod,
-          totalAmount: totalAmount, // ⭐⭐ تم إضافة totalAmount هنا ⭐⭐
-          notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+          totalAmount: totalAmount,
+          notes: _notesController.text.isNotEmpty ? _notesController.text : null, // ⭐⭐ تم التصحيح هنا ⭐⭐
         );
         await invoiceBox.put(newInvoice.id, newInvoice);
       } else {
@@ -129,9 +133,9 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
         widget.invoice!.customerId = _selectedCustomerId;
         widget.invoice!.customerName = _selectedCustomerName;
         widget.invoice!.paymentMethod = _selectedPaymentMethod;
-        widget.invoice!.items = _invoiceItems;
-        widget.invoice!.totalAmount = totalAmount; // ⭐⭐ تم تحديث totalAmount هنا ⭐⭐
-        widget.invoice!.notes = _notesController.text.isNotEmpty ? _notesController.text : null;
+        widget.invoice!.items = hiveInvoiceItems; // ⭐⭐ تم التصحيح هنا ⭐⭐
+        widget.invoice!.totalAmount = totalAmount;
+        widget.invoice!.notes = _notesController.text.isNotEmpty ? _notesController.text : null; // ⭐⭐ تم التصحيح هنا ⭐⭐
         await widget.invoice!.save();
       }
       if (mounted) {
@@ -253,7 +257,7 @@ class _AddEditInvoiceScreenState extends State<AddEditInvoiceScreen> {
                                 children: [
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
-                                      value: item.itemId,
+                                      value: item.itemId.isEmpty ? null : item.itemId, // ⭐⭐ تم التصحيح هنا ⭐⭐
                                       decoration: const InputDecoration(
                                         labelText: 'الصنف',
                                         border: OutlineInputBorder(),
