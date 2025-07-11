@@ -2,6 +2,7 @@
 import 'package:hive/hive.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/payment_method.dart'; // تأكد من استيرادها
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ هذا الاستيراد مهم الآن ⭐⭐
 
 part 'invoice.g.dart';
 
@@ -55,14 +56,5 @@ class Invoice extends HiveObject {
   });
 }
 
-@HiveType(typeId: 1) // ⭐ تأكد أن هذا الـ typeId فريد لأنواع الفواتير
-enum InvoiceType {
-  @HiveField(0)
-  sale, // فاتورة مبيعات
-  @HiveField(1)
-  purchase, // فاتورة مشتريات
-  @HiveField(2) // ⭐ مرتجع مبيعات
-  salesReturn,
-  @HiveField(3) // ⭐ مرتجع مشتريات
-  purchaseReturn,
-}
+// ⭐⭐ تم حذف تعريف enum InvoiceType من هنا ⭐⭐
+// يجب أن يكون تعريف enum InvoiceType في ملف lib/models/invoice_type.dart فقط.
