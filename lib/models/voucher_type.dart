@@ -3,10 +3,10 @@ import 'package:hive/hive.dart';
 
 part 'voucher_type.g.dart';
 
-@HiveType(typeId: 7) // تأكد من أن هذا الـ typeId فريد
+@HiveType(typeId: 7) // تأكد أن الـ typeId فريد
 enum VoucherType {
   @HiveField(0)
-  expense, // سند صرف
+  receipt, // سند قبض
   @HiveField(1)
-  income,  // سند قبض
+  payment, // سند صرف
 }
