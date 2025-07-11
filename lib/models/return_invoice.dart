@@ -1,7 +1,8 @@
 // lib/models/return_invoice.dart
 import 'package:hive/hive.dart';
 import 'package:mhasbb/models/invoice_item.dart'; // استيراد موديل أصناف الفاتورة/المرتجع
-import 'package:mhasbb/models/invoice.dart'; // لاستخدام InvoiceType إذا أردت التمييز بين مرتجع بيع وشراء
+// import 'package:mhasbb/models/invoice.dart'; // هذا السطر لم يعد ضرورياً لاستيراد InvoiceType
+import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ أضف هذا الاستيراد ⭐⭐
 
 part 'return_invoice.g.dart';
 
