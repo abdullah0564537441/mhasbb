@@ -6,6 +6,7 @@ import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/invoice_type.dart';
 import 'package:mhasbb/models/customer.dart';
 import 'package:mhasbb/models/supplier.dart';
+import 'package:mhasbb/models/payment_method.dart'; // ⭐⭐ استيراد PaymentMethod
 
 // كلاس مساعد لتمثيل صف في كشف الحساب
 // هذا ليس HiveType ولن يتم تخزينه في Hive مباشرة
@@ -14,10 +15,11 @@ enum TransactionType { debit, credit } // debit: مدين (لك)، credit: دا�
 class AccountStatementEntry {
   final DateTime date;
   final String description;
-  final double debitAmount;  // المبلغ الذي زاد على العميل/المورد (يعني العميل/المورد مدين لك)
+  final double debitAmount; // المبلغ الذي زاد على العميل/المورد (يعني العميل/المورد مدين لك)
   final double creditAmount; // المبلغ الذي نقص من العميل/المورد (يعني العميل/المورد دائن لك)
   final double runningBalance; // الرصيد بعد هذه الحركة
   final String? relatedInvoiceId; // لربط الحركة بالفاتورة الأصلية
+  final PaymentMethod? paymentMethod; // ⭐⭐ إضافة طريقة الدفع هنا للعرض
 
   AccountStatementEntry({
     required this.date,
@@ -26,6 +28,7 @@ class AccountStatementEntry {
     this.creditAmount = 0.0,
     required this.runningBalance,
     this.relatedInvoiceId,
+    this.paymentMethod, // ⭐⭐ تهيئة الحقل الجديد
   });
 }
 
@@ -66,6 +69,20 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
     }
   }
 
+  // ⭐⭐ دالة مساعدة لتحويل PaymentMethod إلى نص عربي
+  String _getPaymentMethodDisplayName(PaymentMethod method) {
+    switch (method) {
+      case PaymentMethod.cash:
+        return 'نقدي';
+      case PaymentMethod.credit:
+        return 'آجل';
+      case PaymentMethod.bankTransfer:
+        return 'تحويل بنكي';
+      default:
+        return 'غير محدد';
+    }
+  }
+
   List<AccountStatementEntry> _generateAccountStatement() {
     if (_selectedPartyId == null) {
       return [];
@@ -93,9 +110,9 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
         if (invoice.type == InvoiceType.sale) {
           return sum + (item.quantity * item.sellingPrice);
         } else if (invoice.type == InvoiceType.purchase) {
-          // يمكن أن نستخدم سعر الشراء هنا أو نفس سعر البيع اعتمادًا على طريقة الحساب
-          // للاحتفاظ بالبساطة في كشف الحساب، نستخدم إجمالي الفاتورة المدفوعة/المستحقة
-          return sum + (item.quantity * item.purchasePrice); // أو sellingPrice إذا كانت فواتير الشراء تسجل بالسعر النهائي
+          // لفاتورة الشراء: نستخدم سعر الشراء.
+          // هذا يمثل المبلغ الذي أنت مدين به للمورد.
+          return sum + (item.quantity * item.purchasePrice);
         }
         return sum;
       });
@@ -104,31 +121,56 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
       double debit = 0.0;
       double credit = 0.0;
 
-      if (invoice.type == InvoiceType.sale) {
-        // فاتورة بيع: العميل مدين لك، المبلغ يزيد رصيد العميل لديك (يعني العميل عليه فلوس)
-        debit = totalInvoiceAmount;
-        currentBalance += totalInvoiceAmount;
-        description = 'فاتورة مبيعات رقم ${invoice.invoiceNumber}';
-      } else if (invoice.type == InvoiceType.purchase) {
-        // فاتورة شراء: أنت مدين للمورد، المبلغ يزيد رصيد المورد عليك (يعني أنت عليك فلوس للمورد)
-        credit = totalInvoiceAmount;
-        currentBalance -= totalInvoiceAmount;
-        description = 'فاتورة مشتريات رقم ${invoice.invoiceNumber}';
+      if (_isCustomerSelected) {
+        // كشف حساب عميل (حركات البيع)
+        if (invoice.type == InvoiceType.sale) {
+          // فاتورة بيع: العميل مدين لك
+          debit = totalInvoiceAmount;
+          currentBalance += totalInvoiceAmount;
+          description = 'فاتورة مبيعات رقم ${invoice.invoiceNumber} (${_getPaymentMethodDisplayName(invoice.paymentMethod)})'; // ⭐⭐ عرض طريقة الدفع
+          // ⭐⭐ ملاحظة هامة جداً:
+          // إذا كانت هذه الفاتورة "نقدية" أو "تحويل بنكي"، فمن المفترض أن يتم تسجيل دفعة مقابلة لها
+          // في نفس اليوم (أو مباشرة بعدها) لجعل الرصيد الصافي لهذه الفاتورة صفرًا.
+          // حالياً، هذا الكشف يعرض الفواتير فقط ولا يعادلها بالدفعات.
+          // لإظهار "الرصيد المستحق" بدقة، يجب دمج سجلات الدفعات (التي لم يتم إنشاؤها بعد في هذا النظام).
+          // على سبيل المثال، إذا كانت PaymentMethod.cash، يمكننا افتراض دفعة وتسجيلها كـ creditAmount هنا،
+          // ولكن هذا ليس الحل الأمثل بدون نظام دفعات منفصل.
+          // لذا، حالياً، الفواتير النقدية ستظهر مدين، والفواتير الآجلة ستظهر مدين.
+          // الفرق هو أن الآجلة ستبقى مدين حتى تسجل دفعة يدوياً، بينما النقدية من المفترض أن تكون قد سُددت بالفعل.
+
+        }
+        // يمكن إضافة مرتجعات المبيعات هنا مستقبلاً كحركات دائنة
       } else {
-        // أنواع فواتير أخرى إذا كانت موجودة (مثلاً مرتجع بيع، مرتجع شراء)
-        description = 'حركة غير معروفة: ${invoice.invoiceNumber}';
+        // كشف حساب مورد (حركات الشراء)
+        if (invoice.type == InvoiceType.purchase) {
+          // فاتورة شراء: أنت مدين للمورد (المورد دائن لك)
+          credit = totalInvoiceAmount;
+          currentBalance -= totalInvoiceAmount;
+          description = 'فاتورة مشتريات رقم ${invoice.invoiceNumber} (${_getPaymentMethodDisplayName(invoice.paymentMethod)})'; // ⭐⭐ عرض طريقة الدفع
+          // ⭐⭐ ملاحظة هامة جداً:
+          // نفس ملاحظة فاتورة البيع النقدية تنطبق هنا.
+          // إذا كانت هذه الفاتورة "نقدية" أو "تحويل بنكي"، فمن المفترض أن تكون قد قمت بسدادها فوراً.
+          // لإظهار "الرصيد المستحق عليك" بدقة للمورد، يجب دمج سجلات الدفعات الصادرة.
+        }
+        // يمكن إضافة مرتجعات المشتريات هنا مستقبلاً كحركات مدينة
       }
 
-      statementEntries.add(
-        AccountStatementEntry(
-          date: invoice.date,
-          description: description,
-          debitAmount: debit,
-          creditAmount: credit,
-          runningBalance: currentBalance,
-          relatedInvoiceId: invoice.id,
-        ),
-      );
+      // إضافة الحركة إلى كشف الحساب فقط إذا كانت ذات صلة بالطرف المختار
+      // (تجنباً لإضافة فواتير الشراء في كشف حساب العميل والعكس)
+      if ((_isCustomerSelected && invoice.type == InvoiceType.sale) ||
+          (!_isCustomerSelected && invoice.type == InvoiceType.purchase)) {
+        statementEntries.add(
+          AccountStatementEntry(
+            date: invoice.date,
+            description: description,
+            debitAmount: debit,
+            creditAmount: credit,
+            runningBalance: currentBalance,
+            relatedInvoiceId: invoice.id,
+            paymentMethod: invoice.paymentMethod, // ⭐⭐ تمرير طريقة الدفع
+          ),
+        );
+      }
     }
     return statementEntries;
   }
@@ -166,6 +208,8 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                           _selectedPartyId = suppliersBox.values.first.id;
                           _selectedPartyName = suppliersBox.values.first.name;
                         }
+                        // إعادة توليد كشف الحساب عند تغيير الطرف
+                        _generateAccountStatement(); // لا داعي لحفظ الناتج هنا، فقط للتأكد من التحديث
                       });
                     },
                     items: const [
@@ -201,7 +245,7 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                       }
 
                       if (parties.isEmpty) {
-                        return DropdownButtonFormField<String>( // ⭐⭐ تم إزالة 'const' من هنا
+                        return DropdownButtonFormField<String>(
                           decoration: const InputDecoration(
                             labelText: 'لا يوجد عملاء/موردين',
                             border: OutlineInputBorder(),
@@ -226,6 +270,8 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                             } else {
                               _selectedPartyName = suppliersBox.values.firstWhere((s) => s.id == newValue).name;
                             }
+                            // إعادة توليد كشف الحساب عند تغيير الطرف
+                            _generateAccountStatement();
                           });
                         },
                         items: parties.map((party) {
@@ -278,9 +324,24 @@ class _AccountStatementScreenState extends State<AccountStatementScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          'التاريخ: ${DateFormat('yyyy-MM-dd').format(entry.date)}',
-                                          style: Theme.of(context).textTheme.bodySmall,
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'التاريخ: ${DateFormat('yyyy-MM-dd').format(entry.date)}',
+                                              style: Theme.of(context).textTheme.bodySmall,
+                                            ),
+                                            // ⭐⭐ عرض طريقة الدفع هنا كـ Chip
+                                            if (entry.paymentMethod != null)
+                                              Chip(
+                                                label: Text(_getPaymentMethodDisplayName(entry.paymentMethod!)),
+                                                backgroundColor: entry.paymentMethod == PaymentMethod.credit
+                                                    ? Colors.orange.shade100 // آجل
+                                                    : entry.paymentMethod == PaymentMethod.cash
+                                                        ? Colors.green.shade100 // نقدي
+                                                        : Colors.blue.shade100, // تحويل بنكي
+                                              ),
+                                          ],
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
