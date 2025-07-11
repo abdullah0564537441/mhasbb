@@ -13,9 +13,10 @@ import 'package:mhasbb/screens/account_statement_screen.dart';
 import 'package:mhasbb/screens/reports_screen.dart';
 import 'package:mhasbb/screens/vouchers_screen.dart';
 import 'package:mhasbb/screens/add_edit_return_invoice_screen.dart';
+import 'package:mhasbb/screens/notes_screen.dart'; // استيراد شاشة الملاحظات
 import 'package:mhasbb/main.dart'; // لاستخدام PlaceholderScreen
-// ⭐⭐ أضف استيراد شاشة الملاحظات هنا
-import 'package:mhasbb/screens/notes_screen.dart';
+// ⭐⭐ أضف استيراد شاشة الآلة الحاسبة هنا
+import 'package:mhasbb/screens/calculator_screen.dart';
 
 
 class HomeScreen extends StatelessWidget {
@@ -59,9 +60,12 @@ class HomeScreen extends StatelessWidget {
       case 'المرتجعات':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditReturnInvoiceScreen()));
         break;
-      // ⭐⭐ أضف توجيه شاشة الملاحظات هنا
       case 'الملاحظات':
         Navigator.push(context, MaterialPageRoute(builder: (context) => const NotesScreen()));
+        break;
+      // ⭐⭐ أضف توجيه شاشة الآلة الحاسبة هنا
+      case 'الآلة الحاسبة':
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const CalculatorScreen()));
         break;
       case 'الضريبة':
       case 'الإعدادات':
@@ -102,8 +106,9 @@ class HomeScreen extends StatelessWidget {
             _buildSectionCard(context, 'التقارير', Icons.bar_chart, Colors.brown),
             _buildSectionCard(context, 'سندات الصرف والقبض', Icons.receipt_long, Colors.deepOrange),
             _buildSectionCard(context, 'المرتجعات', Icons.assignment_return, Colors.indigoAccent),
-            // ⭐⭐ أضف بطاقة الملاحظات هنا
             _buildSectionCard(context, 'الملاحظات', Icons.note_alt, Colors.amber),
+            // ⭐⭐ أضف بطاقة الآلة الحاسبة هنا
+            _buildSectionCard(context, 'الآلة الحاسبة', Icons.calculate, Colors.blueGrey),
             _buildSectionCard(context, 'الضريبة', Icons.calculate, Colors.lime),
             _buildSectionCard(context, 'الإعدادات', Icons.settings, Colors.grey),
           ],
