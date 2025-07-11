@@ -1,12 +1,12 @@
 // lib/models/invoice.dart
 import 'package:hive/hive.dart';
 import 'package:mhasbb/models/invoice_item.dart';
-import 'package:mhasbb/models/payment_method.dart'; // تأكد من استيرادها
-import 'package:mhasbb/models/invoice_type.dart'; // ⭐⭐ هذا الاستيراد مهم الآن ⭐⭐
+import 'package:mhasbb/models/payment_method.dart';
+import 'package:mhasbb/models/invoice_type.dart';
 
 part 'invoice.g.dart';
 
-@HiveType(typeId: 3) // تأكد أن هذا الـ typeId فريد وغير مستخدم لنماذج أخرى
+@HiveType(typeId: 3)
 class Invoice extends HiveObject {
   @HiveField(0)
   late String id;
@@ -15,7 +15,7 @@ class Invoice extends HiveObject {
   late String invoiceNumber;
 
   @HiveField(2)
-  late InvoiceType type; // نوع الفاتورة (بيع، شراء، مرتجع بيع، مرتجع شراء)
+  late InvoiceType type;
 
   @HiveField(3)
   late DateTime date;
@@ -35,11 +35,14 @@ class Invoice extends HiveObject {
   @HiveField(8)
   String? supplierName;
 
-  @HiveField(9) // ⭐ حقل طريقة الدفع (نقد، آجل، تحويل بنكي)
+  @HiveField(9)
   late PaymentMethod paymentMethod;
 
-  @HiveField(10) // ⭐ حقل جديد لربط المرتجع بالفاتورة الأصلية
+  @HiveField(10)
   String? originalInvoiceId;
+
+  @HiveField(11) // ⭐⭐ حقل جديد: إجمالي الفاتورة ⭐⭐
+  late double totalAmount;
 
   Invoice({
     required this.id,
@@ -51,10 +54,8 @@ class Invoice extends HiveObject {
     this.customerName,
     this.supplierId,
     this.supplierName,
-    this.paymentMethod = PaymentMethod.cash, // قيمة افتراضية لطريقة الدفع
-    this.originalInvoiceId, // تهيئة الحقل الجديد
+    this.paymentMethod = PaymentMethod.cash,
+    this.originalInvoiceId,
+    required this.totalAmount, // ⭐⭐ يجب أن يكون مطلوبًا ⭐⭐
   });
 }
-
-// ⭐⭐ تم حذف تعريف enum InvoiceType من هنا ⭐⭐
-// يجب أن يكون تعريف enum InvoiceType في ملف lib/models/invoice_type.dart فقط.
