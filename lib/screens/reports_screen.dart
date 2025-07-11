@@ -1,6 +1,6 @@
 // lib/screens/reports_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // ⭐⭐ تم إضافة هذا الاستيراد
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:mhasbb/models/invoice.dart';
@@ -9,9 +9,8 @@ import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/voucher.dart';
 import 'package:mhasbb/models/return_invoice.dart';
 import 'package:mhasbb/models/voucher_type.dart';
-import 'package:mhasbb/screens/placeholder_screen.dart'; // ⭐⭐ تم إضافة هذا الاستيراد
+import 'package:mhasbb/screens/placeholder_screen.dart';
 
-// ⭐⭐ تحديث enum ReportType
 enum ReportType { sales, purchases, inventory, returns, vouchers }
 
 class ReportsScreen extends StatefulWidget {
@@ -22,7 +21,7 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  ReportType _selectedReportType = ReportType.sales; // التقرير الافتراضي
+  ReportType _selectedReportType = ReportType.sales;
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _endDate = DateTime.now();
 
@@ -310,7 +309,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('رقم فاتورة المرتجع: ${returnsInvoice.returnNumber}', // تم التعديل هنا
+                        Text('رقم فاتورة المرتجع: ${returnsInvoice.returnNumber}',
                             style: Theme.of(context).textTheme.titleMedium),
                         Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(returnsInvoice.date)}'),
                         Text('العميل/المورد: ${returnsInvoice.customerName ?? returnsInvoice.supplierName ?? 'غير محدد'}'),
@@ -404,7 +403,114 @@ class _ReportsScreenState extends State<ReportsScreen> {
         title: const Text('التقارير'),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
+      body: Column( // ⭐⭐ تأكد من هذا القوس المفتوح
+        children: [ // ⭐⭐ وتأكد من هذا القوس المفتوح
           Padding(
             padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                DropdownButtonFormField<ReportType>(
+                  decoration: const InputDecoration(
+                    labelText: 'اختر التقرير',
+                    border: OutlineInputBorder(),
+                  ),
+                  value: _selectedReportType,
+                  onChanged: (ReportType? newValue) {
+                    setState(() {
+                      _selectedReportType = newValue!;
+                    });
+                  },
+                  items: const [
+                    DropdownMenuItem(
+                      value: ReportType.sales,
+                      child: Text('تقرير المبيعات'),
+                    ),
+                    DropdownMenuItem(
+                      value: ReportType.purchases,
+                      child: Text('تقرير المشتريات'),
+                    ),
+                    DropdownMenuItem(
+                      value: ReportType.inventory,
+                      child: Text('تقرير المخزون'),
+                    ),
+                    DropdownMenuItem(
+                      value: ReportType.returns,
+                      child: Text('تقرير المرتجعات'),
+                    ),
+                    DropdownMenuItem(
+                      value: ReportType.vouchers,
+                      child: Text('تقرير السندات'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                if (_selectedReportType != ReportType.inventory)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _selectDate(context, true),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'من تاريخ',
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(DateFormat('yyyy-MM-dd').format(_startDate)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _selectDate(context, false),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'إلى تاريخ',
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(DateFormat('yyyy-MM-dd').format(_endDate)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {});
+                  },
+                  child: const Text('تحديث التقرير'),
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
+          Expanded(
+            child: ValueListenableBuilder<Box>(
+              valueListenable: _getSelectedBoxListenables(),
+              builder: (context, box, _) {
+                return _buildReportContent();
+              },
+            ),
+          ),
+        ], // ⭐⭐ وتأكد من هذا القوس المغلق
+      ), // ⭐⭐ وتأكد من هذا القوس المغلق
+    );
+  }
+
+  ValueListenable<Box<dynamic>> _getSelectedBoxListenables() {
+    switch (_selectedReportType) {
+      case ReportType.sales:
+      case ReportType.purchases:
+        return invoicesBox.listenable() as ValueListenable<Box<dynamic>>;
+      case ReportType.inventory:
+        return itemsBox.listenable() as ValueListenable<Box<dynamic>>;
+      case ReportType.returns:
+        return returnsBox.listenable() as ValueListenable<Box<dynamic>>;
+      case ReportType.vouchers:
+        return vouchersBox.listenable() as ValueListenable<Box<dynamic>>;
+      default:
+        return invoicesBox.listenable() as ValueListenable<Box<dynamic>>;
+    }
+  }
+}
