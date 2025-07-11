@@ -8,7 +8,6 @@ import 'package:mhasbb/models/invoice.dart';
 import 'package:mhasbb/models/invoice_item.dart';
 import 'package:mhasbb/models/item.dart';
 import 'package:mhasbb/models/customer.dart';
-import 'package:mhasbb/models/invoice_type.dart';
 import 'package:mhasbb/models/payment_method.dart'; // ⭐ أضف هذا السطر
 
 class AddEditInvoiceScreen extends StatefulWidget {
